@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Monitor de temperatura do galinheiro
 
 Um ESP32 mede a temperatura, liga o ventilador sozinho (30 °C liga, 28 °C desliga) e envia o histórico para um painel web. O controle é local e não depende de internet; a nuvem só guarda, mostra e vigia.
@@ -43,3 +44,6 @@ pio run -t upload
 ## Status
 
 Em planejamento. As fases estão no roteiro em `docs/`.
+=======
+# Chicken-copp-temperature-monitor
+>>>>>>> e24db33aa0b9bc3cdc0c8db2259ecf4578f17744
