@@ -1,0 +1,17 @@
+# Node / Next.js
+node_modules/
+.next/
+.vercel/
+coverage/
+
+# Segredos
+.env
+.env.*
+!.env.example
+firmware/include/secrets.h
+
+# PlatformIO
+.pio/
+.vscode/
+
+.DS_Store
