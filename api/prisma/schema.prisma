@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider     = "postgresql"
+  relationMode = "prisma"
+}
+
+model Device {
+  id         String    @id
+  name       String
+  keyHash    String    @map("key_hash")
+  lastSeenAt DateTime? @map("last_seen_at") @db.Timestamptz(3)
+  fwVersion  String?   @map("fw_version")
+
+  readings  Reading[]
+  events    Event[]
+  summaries DailySummary[]
+
+  @@map("devices")
+}
+
+model Reading {
+  deviceId String   @map("device_id")
+  ts       DateTime @db.Timestamptz(3)
+  tempC    Float    @map("temp_c")
+  humPct   Float    @map("hum_pct")
+  fanOn    Boolean  @map("fan_on")
+
+  device Device @relation(fields: [deviceId], references: [id])
+
+  @@id([deviceId, ts])
+  @@map("readings")
+}
+
+model Event {
+  deviceId String   @map("device_id")
+  ts       DateTime @db.Timestamptz(3)
+  type     String
+  detail   Json?
+
+  device Device @relation(fields: [deviceId], references: [id])
+
+  @@id([deviceId, ts, type])
+  @@index([deviceId, ts(sort: Desc)])
+  @@map("events")
+}
+
+model DailySummary {
+  deviceId       String    @map("device_id")
+  day            DateTime  @db.Date
+  tempMin        Float?    @map("temp_min")
+  tempMax        Float?    @map("temp_max")
+  tempAvg        Float?    @map("temp_avg")
+  fanMinutes     Int       @map("fan_minutes")
+  minutesAbove30 Int       @map("minutes_above_30")
+  eventCount     Int       @map("event_count")
+  missingMinutes Int       @map("missing_minutes")
+  telegramSentAt DateTime? @map("telegram_sent_at") @db.Timestamptz(3)
+
+  device Device @relation(fields: [deviceId], references: [id])
+
+  @@id([deviceId, day])
+  @@map("daily_summary")
+}
+
+model User {
+  id           String @id @default(uuid())
+  email        String @unique
+  passwordHash String @map("password_hash")
+
+  @@map("users")
+}
+
+model LoginAttempt {
+  id  String   @id @default(uuid())
+  key String
+  at  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([key, at])
+  @@map("login_attempts")
+}

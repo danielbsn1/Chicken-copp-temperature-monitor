@@ -10,27 +10,46 @@ Design completo em [docs/](docs/): o roteiro e o diagrama de arquitetura.
 | Pasta | Conteúdo |
 | --- | --- |
 | `firmware/` | ESP32 (PlatformIO) |
-| `web/` | Painel React e API (Next.js, Vercel) |
+| `api/` | Backend Node.js + TypeScript (Fastify, Prisma) |
+| `web/` | Painel React (Vite) |
 | `docs/` | Roteiro e diagrama |
 
 ## Requisitos
 
-- Node.js 22 (`.nvmrc`) e pnpm
+- Node.js 24 (`.nvmrc`) e pnpm
 - Docker, para o Postgres local
 - PlatformIO, para o firmware
 
-## Rodar o painel e a API (a partir da Fase 2)
+## Rodar a API e o painel
 
 ```
-cp .env.example web/.env.local
-docker compose up -d
+# API (http://localhost:3333, documentação em /docs)
+cd api
+pnpm install
+pnpm dev
+
+# Painel (http://localhost:5173)
 cd web
 pnpm install
-pnpm db:migrate
 pnpm dev
 ```
 
-Em produção o banco é o Aurora DSQL; o Postgres do Docker é só para desenvolvimento.
+O banco (Postgres no Docker) entra na Fase 2: `cp .env.example api/.env` e `docker compose up -d`. Em produção o banco é o Aurora DSQL.
+
+## Contrato OpenAPI
+
+A API gera o `api/openapi.json` a partir dos schemas `zod`, e o painel gera os tipos a partir dele:
+
+```
+cd api && pnpm openapi:export   # atualiza api/openapi.json
+cd web && pnpm gen:api          # atualiza web/src/api/schema.d.ts
+```
+
+Os dois arquivos vão para o Git, e o CI falha se algum estiver desatualizado.
+
+## CI (GitHub Actions)
+
+Um workflow por pasta, que roda só quando ela muda: `api` (lint, tipos, testes, build e OpenAPI atualizado), `web` (tipos da API, lint, tipos e build) e `firmware` (`pio run`).
 
 ## Firmware
 

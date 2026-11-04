@@ -1,3 +1,3 @@
 # web
 
-Painel React e rotas de API (Next.js + TypeScript, Drizzle). Criado na Fase 2.
+Painel em React + TypeScript (Vite). Consome a API pelo contrato OpenAPI. Criado na Fase 4.

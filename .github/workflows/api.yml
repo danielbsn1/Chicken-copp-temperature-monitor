@@ -1,0 +1,53 @@
+name: api
+
+on:
+  push:
+    branches: [main]
+    paths: ["api/**", ".nvmrc", ".github/workflows/api.yml"]
+  pull_request:
+    paths: ["api/**", ".nvmrc", ".github/workflows/api.yml"]
+
+defaults:
+  run:
+    working-directory: api
+
+env:
+  DATABASE_URL: postgres://chicken:chicken@localhost:5432/chicken
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: chicken
+          POSTGRES_PASSWORD: chicken
+          POSTGRES_DB: chicken
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U chicken"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: api/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: api/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm db:deploy
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: OpenAPI está atualizado
+        run: |
+          pnpm openapi:export
+          git diff --exit-code openapi.json

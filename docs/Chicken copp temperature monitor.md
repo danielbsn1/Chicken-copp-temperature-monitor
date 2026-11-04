@@ -17,7 +17,7 @@ Escolhi Node.js com TypeScript, Next.js na Vercel e Aurora DSQL na AWS, com o co
 | Backend                | Node.js + TypeScript                                                                                 | Mesma linguagem do React, pouco código repetitivo                                                                                                            |
 | Front e API            | Next.js na Vercel: React e rotas de API no mesmo projeto                                             | Um deploy só e tipos compartilhados                                                                                                                          |
 | Banco                  | Aurora DSQL na AWS, na conta gratuita                                                                | Cota mensal gratuita permanente e SQL (PostgreSQL) para relatórios; o Aurora PostgreSQL não pausa com gravação por minuto e custaria cerca de US$ 44 por mês |
-| Acesso ao banco        | Drizzle ORM, com SQL puro nas agregações                                                             | Leve em serverless e com controle das consultas por período; compatibilidade com o DSQL a validar na Fase 2                                                  |
+| Acesso ao banco        | Prisma ORM, com SQL puro (`$queryRaw`) nas agregações                                                             | Leve em serverless e com controle das consultas por período; compatibilidade com o DSQL a validar na Fase 2                                                  |
 | Transporte do ESP32    | HTTPS POST com JSON, em lote                                                                         | Simples e testável com `curl`                                                                                                                                |
 | Tempo real             | Consulta a cada 30 s, sem SSE                                                                        | O dado chega a cada 60 s; evita conexões longas em serverless                                                                                                |
 | Tarefas agendadas      | Cron da Vercel (relatório diário) e Healthchecks.io (dispositivo mudo), sem scripts na AWS           | O cron Hobby roda 1 vez ao dia, o que basta para o relatório; o Healthchecks.io avisa quando o ping some, sem precisar de job a cada 5 min                   |
@@ -151,7 +151,7 @@ A API é um único projeto Next.js com TypeScript, onde as rotas de API rodam em
 **Cuidados de serverless**
 
 - Cada chamada é curta e sem estado. O que precisa persistir (resumos diários, limite de tentativas de login) fica no banco.
-- Conexão com o banco: o DSQL autentica com token IAM de curta duração, gerado a cada conexão; como a Vercel se autentica na AWS (credenciais de menor privilégio, só para esse cluster) e como o pool se comporta com o Drizzle ficam para validar na Fase 2. A camada `lib/db` repete a transação em conflito de concorrência otimista.
+- Conexão com o banco: o DSQL autentica com token IAM de curta duração, gerado a cada conexão; como a Vercel se autentica na AWS (credenciais de menor privilégio, só para esse cluster) e como o Prisma (com o adaptador `pg`) se comporta com a senha temporária ficam para validar na Fase 2. A camada `server/db` repete a transação em conflito de concorrência otimista.
 - Sem SSE nem conexões longas: o painel consulta a cada 30 s.
 - Conferir na Fase 2 o ajuste do Fluid compute no painel da Vercel e a conexão com o DSQL antes de escrever o resto da API.
 
@@ -165,7 +165,7 @@ O banco é o Aurora DSQL, na conta gratuita da AWS. O Aurora PostgreSQL serverle
 | ---------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | Aurora DSQL                                    | Cota mensal gratuita permanente; SQL compatível com PostgreSQL | Compatibilidade parcial e novas tentativas por concorrência otimista ([resumo](https://book.st-hakky.com/en/data-platform/aurora-dsql-overview)); conexão com token IAM; consumo real a medir | Escolha                                                   |
 | Aurora PostgreSQL serverless                   | PostgreSQL completo                                            | Não pausa com gravação por minuto; cerca de US$ 44 por mês com 0,5 ACU, estimativa de terceiros ([usage.ai](https://www.usage.ai/blogs/aws/rds/aurora-serverless-v2/))                        | Descartado                                                |
-| Postgres gratuito fora da AWS (Neon, Supabase) | PostgreSQL completo e plano gratuito                           | Sai da AWS                                                                                                                                                                                    | Plano B se o DSQL não funcionar com o Drizzle ou a Vercel |
+| Postgres gratuito fora da AWS (Neon, Supabase) | PostgreSQL completo e plano gratuito                           | Sai da AWS                                                                                                                                                                                    | Plano B se o DSQL não funcionar com o Prisma ou a Vercel |
 | DynamoDB                                       | Pago por uso                                                   | Relatórios por período exigem chaves bem desenhadas e agregação no código                                                                                                                     | Descartado                                                |
 
 **Modelo de dados**
@@ -186,7 +186,7 @@ O banco é o Aurora DSQL, na conta gratuita da AWS. O Aurora PostgreSQL serverle
 - Como cada amostra vale 1 minuto, `fan_minutes` é a contagem de amostras com `fan_on` e `missing_minutes` é 1.440 menos o total de amostras do dia.
 - Dias são calculados no fuso America/Sao_Paulo; o armazenamento é sempre UTC.
 - Retenção: guardar tudo. O volume é de dezenas de MB por ano.
-- Migrações com `drizzle-kit`, versionadas no Git e aplicadas antes de cada deploy. Conferir a lista de recursos que o DSQL não suporta (por exemplo, chaves estrangeiras) antes de escrever o esquema.
+- Migrações com `prisma migrate`, versionadas no Git e aplicadas antes de cada deploy. Conferir a lista de recursos que o DSQL não suporta (por exemplo, chaves estrangeiras) antes de escrever o esquema.
 - Backup: conferir, ao criar o cluster, a retenção dos backups do DSQL e exportar `daily_summary` em CSV todo mês (opcional).
 
 ## Tarefas agendadas e alertas
