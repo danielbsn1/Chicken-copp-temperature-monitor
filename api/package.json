@@ -18,9 +18,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "device:create": "tsx scripts/create-device.ts"
+    "device:create": "tsx scripts/create-device.ts",
+    "user:create": "tsx scripts/create-user.ts"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.5",
     "@fastify/swagger": "^9.9.2",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",

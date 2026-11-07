@@ -11,4 +11,7 @@ export function prisma(): PrismaClient {
   return client;
 }
 
-export type Db = Pick<PrismaClient, "device" | "reading" | "event">;
+export type Db = Pick<
+  PrismaClient,
+  "device" | "reading" | "event" | "user" | "loginAttempt"
+>;

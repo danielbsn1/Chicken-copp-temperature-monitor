@@ -1,3 +1,4 @@
+import cookie from "@fastify/cookie";
 import swagger from "@fastify/swagger";
 import scalar from "@scalar/fastify-api-reference";
 import Fastify, { type FastifyError } from "fastify";
@@ -7,6 +8,8 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
+import { env } from "./lib/env.js";
+import { authRoutes } from "./routes/auth.js";
 import { healthRoutes } from "./routes/health.js";
 import { ingestRoutes } from "./routes/ingest.js";
 
@@ -48,8 +51,11 @@ export async function buildApp() {
   });
   await app.register(scalar, { routePrefix: "/docs" });
 
+  await app.register(cookie, { secret: env("SESSION_SECRET") });
+
   await app.register(healthRoutes);
   await app.register(ingestRoutes, { prefix: "/api" });
+  await app.register(authRoutes, { prefix: "/api" });
 
   return app;
 }
