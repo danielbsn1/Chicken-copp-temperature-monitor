@@ -60,7 +60,7 @@ Cada app tem os scripts no próprio `package.json`; o mesmo comando roda no comp
 
 | App | Scripts |
 | --- | --- |
-| `api/` | `dev`, `lint`, `typecheck`, `test`, `build`, `db:deploy`, `device:create` |
+| `api/` | `dev`, `lint`, `format:check`, `typecheck`, `depcruise`, `test`, `build`, `db:deploy`, `device:create`, `user:create` |
 | `web/` | `dev`, `lint`, `typecheck`, `build`, `preview` |
 
 `pnpm device:create` cadastra um dispositivo (ou troca a chave dele) e mostra a chave uma única vez.

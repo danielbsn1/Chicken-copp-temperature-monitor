@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2023",
+    "lib": ["ES2023"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "dist",
-    "rootDir": ".",
+    "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src", "scripts"]
+  "include": ["src", "api", "scripts", "vitest.config.ts"]
 }
