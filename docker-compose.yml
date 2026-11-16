@@ -1,4 +1,4 @@
-# Só para desenvolvimento local. Em produção o banco é o Aurora DSQL.
+# Só para desenvolvimento local. Em produção o banco é o Postgres do Supabase.
 services:
   db:
     image: postgres:16

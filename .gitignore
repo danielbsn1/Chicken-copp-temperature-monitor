@@ -1,6 +1,5 @@
-# Node / Next.js
+# Node
 node_modules/
-.next/
 .vercel/
 coverage/
 
@@ -13,6 +12,7 @@ firmware/include/secrets.h
 # PlatformIO
 .pio/
 .vscode/
+.idea/
 
 .DS_Store
 dist/
