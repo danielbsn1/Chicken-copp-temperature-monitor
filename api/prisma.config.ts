@@ -1,4 +1,4 @@
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 try {
   process.loadEnvFile();
@@ -9,5 +9,7 @@ try {
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: { path: "prisma/migrations" },
-  datasource: { url: env("DIRECT_URL") },
+  // Sem DIRECT_URL só o `prisma generate` funciona (instalação, CI, build da Vercel);
+  // as migrações exigem a variável.
+  datasource: { url: process.env.DIRECT_URL ?? "" },
 });

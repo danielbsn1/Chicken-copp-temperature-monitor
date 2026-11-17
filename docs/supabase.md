@@ -25,7 +25,9 @@ A Data API está desativada nos dois projetos (Integrations › Data API). Nada 
 
 Todos com `LOGIN` e sem `SUPERUSER`, `CREATEDB`, `CREATEROLE` ou `BYPASSRLS`. Cada papel tem senha própria, gerada aleatoriamente, e a senha nunca aparece no Git.
 
-Como foram criados: no SQL Editor de cada projeto, `CREATE ROLE ... LOGIN PASSWORD '...'`, `GRANT CONNECT`, `GRANT USAGE` (e `CREATE` para o migrador) no schema `public` e `ALTER DEFAULT PRIVILEGES FOR ROLE avitech_migrator` dando DML ao `avitech_app` nas tabelas e sequências futuras. A migração `20261117190000_papeis_e_permissoes_do_banco` repete o desenho, sem senha, em Postgres descartável e concede o acesso às tabelas já existentes.
+Como foram criados: no SQL Editor de cada projeto, `CREATE ROLE ... LOGIN PASSWORD '...'`, `GRANT CONNECT`, `GRANT USAGE` (e `CREATE` para o migrador) no schema `public` e `ALTER DEFAULT PRIVILEGES FOR ROLE avitech_migrator` dando DML ao `avitech_app` nas tabelas e sequências futuras. O RLS fica ligado e sem políticas nas seis tabelas (migração `20261118120000_esquema_conforme_o_documento`). Por isso o `avitech_app` precisa de `BYPASSRLS`: no Supabase, rodar uma vez em cada projeto `ALTER ROLE avitech_app BYPASSRLS;` no SQL Editor (a migração só faz isso em Postgres descartável, onde quem migra é superusuário). O Supabase REST/`anon` continua sem acesso.
+
+A migração `20261117190000_papeis_e_permissoes_do_banco` repete o desenho, sem senha, em Postgres descartável e concede o acesso às tabelas já existentes.
 
 ## Conexões
 

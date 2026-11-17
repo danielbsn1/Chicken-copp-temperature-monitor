@@ -4,8 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider     = "postgresql"
-  relationMode = "prisma"
+  provider = "postgresql"
 }
 
 model Device {
@@ -25,8 +24,8 @@ model Device {
 model Reading {
   deviceId String   @map("device_id")
   ts       DateTime @db.Timestamptz(3)
-  tempC    Float    @map("temp_c")
-  humPct   Float    @map("hum_pct")
+  tempC    Float    @map("temp_c") @db.Real
+  humPct   Float    @map("hum_pct") @db.Real
   fanOn    Boolean  @map("fan_on")
 
   device Device @relation(fields: [deviceId], references: [id])
@@ -44,20 +43,17 @@ model Event {
   device Device @relation(fields: [deviceId], references: [id])
 
   @@id([deviceId, ts, type])
-  @@index([deviceId, ts(sort: Desc)])
   @@map("events")
 }
 
 model DailySummary {
   deviceId       String    @map("device_id")
   day            DateTime  @db.Date
-  tempMin        Float?    @map("temp_min")
-  tempMax        Float?    @map("temp_max")
-  tempAvg        Float?    @map("temp_avg")
-  fanMinutes     Int       @map("fan_minutes")
-  minutesAbove30 Int       @map("minutes_above_30")
-  eventCount     Int       @map("event_count")
-  missingMinutes Int       @map("missing_minutes")
+  tempMinC       Float     @map("temp_min_c") @db.Real
+  tempMaxC       Float     @map("temp_max_c") @db.Real
+  tempAvgC       Float     @map("temp_avg_c") @db.Real
+  fanOnMinutes   Int       @map("fan_on_minutes")
+  readingsCount  Int       @map("readings_count")
   telegramSentAt DateTime? @map("telegram_sent_at") @db.Timestamptz(3)
 
   device Device @relation(fields: [deviceId], references: [id])
@@ -67,7 +63,7 @@ model DailySummary {
 }
 
 model User {
-  id           String @id @default(uuid())
+  id           String @id @default(uuid()) @db.Uuid
   email        String @unique
   passwordHash String @map("password_hash")
 
@@ -75,7 +71,7 @@ model User {
 }
 
 model LoginAttempt {
-  id  String   @id @default(uuid())
+  id  BigInt   @id @default(autoincrement())
   key String
   at  DateTime @default(now()) @db.Timestamptz(3)
 
