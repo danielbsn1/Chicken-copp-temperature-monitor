@@ -50,3 +50,26 @@ Atenção: `vercel.app` está na lista de sufixos públicos, então `avitech-web
 ## Deployment Protection
 
 Em Hobby vem ligada (Standard Protection): protege as URLs de preview, e o endereço de produção continua público. O painel e o ESP32 precisam alcançar a API de staging sem login na Vercel; conferir depois do primeiro deploy da API.
+
+## Deploy
+
+| Workflow | Gatilho | Environment | O que faz |
+| --- | --- | --- | --- |
+| `deploy-staging.yml` | push em `development` | `staging` | `db:deploy`, publica a API, confere `/api/health`, publica o front-end |
+| `deploy-production.yml` | push em `main` | `production` (aprovação manual) | os mesmos passos, em produção |
+
+Ordem: as migrações vêm primeiro, então código novo nunca roda sobre esquema antigo; se `db:deploy` falhar, nada é publicado. A API é publicada e verificada antes do front-end. O health check exige HTTP 200 (até 6 tentativas) e, se falhar, o job falha. Os workflows não rodam em pull requests, usam `cancel-in-progress: false` e `timeout-minutes: 15`.
+
+Cada projeto da Vercel usa só o ambiente *Production*, por isso os dois workflows publicam com `--prod`; o staging é separado pelo projeto, não pelo tipo de deploy. A publicação é feita pela CLI (`pull`, `build`, `deploy --prebuilt`), já que o Git integrado da Vercel está desligado.
+
+Secrets de cada GitHub Environment (`staging` e `production`), sem valores no repositório:
+
+| Secret | Uso |
+| --- | --- |
+| `VERCEL_TOKEN` | autentica a CLI da Vercel |
+| `VERCEL_ORG_ID` | time `avitech1` |
+| `VERCEL_PROJECT_ID_API` | projeto `avitech-api-*` do ambiente |
+| `VERCEL_PROJECT_ID_WEB` | projeto `avitech-web-*` do ambiente |
+| `DIRECT_URL` | conexão direta do Postgres, só no `db:deploy` |
+
+O endereço usado no health check (`API_URL`) está no topo de cada workflow; mude-o ao ganhar domínio próprio.
