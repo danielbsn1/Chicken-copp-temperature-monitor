@@ -1,0 +1,117 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [development, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: api
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: api
+    env:
+      DATABASE_URL: postgres://chicken:chicken@localhost:5432/chicken
+      DIRECT_URL: postgres://chicken:chicken@localhost:5432/chicken
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: chicken
+          POSTGRES_PASSWORD: chicken
+          POSTGRES_DB: chicken
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U chicken"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7.0.1
+      - name: Instalar o pnpm
+        uses: pnpm/action-setup@v6.1.1
+        with:
+          package_json_file: api/package.json
+      - name: Instalar o Node 22 com cache
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: api/pnpm-lock.yaml
+      - name: Instalar dependências (lockfile congelado)
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Formatação
+        run: pnpm format:check
+      - name: Tipos
+        run: pnpm typecheck
+      - name: Regras de dependência
+        run: pnpm depcruise
+      - name: Testes com cobertura (mínimo de 80 % nos services)
+        run: pnpm test --coverage
+      - name: Migrações no Postgres 16 descartável
+        run: pnpm db:deploy
+      - name: Build
+        run: pnpm build
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7.0.1
+      - name: Instalar o pnpm
+        uses: pnpm/action-setup@v6.1.1
+        with:
+          package_json_file: web/package.json
+      - name: Instalar o Node 22 com cache
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Instalar dependências (lockfile congelado)
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Formatação
+        run: pnpm format:check
+      - name: Tipos
+        run: pnpm typecheck
+      - name: Regras de dependência
+        run: pnpm depcruise
+      - name: Testes com cobertura (mínimo de 80 % em hooks, schemas e format)
+        run: pnpm test --coverage
+      - name: Build
+        run: pnpm build
+        env:
+          VITE_API_URL: http://localhost:3333/api
+          VITE_DEVICE_ID: galinheiro-1
+
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [api, web]
+    if: always()
+    steps:
+      - name: Falhar se api ou web não terminaram com sucesso
+        run: |
+          echo "api: ${{ needs.api.result }}"
+          echo "web: ${{ needs.web.result }}"
+          test "${{ needs.api.result }}" = "success" && test "${{ needs.web.result }}" = "success"

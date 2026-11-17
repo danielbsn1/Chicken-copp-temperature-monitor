@@ -84,4 +84,5 @@ pio run -t upload
 
 - Ninguém faz push direto em `main` nem em `development`; toda alteração entra por pull request, com o check `ci` verde e 1 aprovação.
 - O título do pull request segue `tipo(escopo): descrição`, com tipo `feat`, `fix`, `refactor`, `test`, `docs`, `ci` ou `chore`. Exemplo: `feat(auth): login com cookie de sessão`.
+- O check `ci` (`.github/workflows/ci.yml`) roda em todo pull request para `development` e `main`: os jobs `api` e `web` em paralelo (lint, format:check, typecheck, depcruise, testes com cobertura e build; a `api` também aplica as migrações num Postgres 16 descartável) e o job agregador `ci`, que falha se qualquer um deles falhar. Não usa nenhum segredo.
 - O pull request de `development` para `main` leva o título `release: AAAA-MM-DD`.
