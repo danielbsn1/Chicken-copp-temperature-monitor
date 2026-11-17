@@ -1,0 +1,111 @@
+name: backup
+
+# pg_dump diário do banco de produção, gravado no Storage do projeto Supabase de
+# staging (projeto separado do de produção). O dump nunca vira artifact nem vai
+# para o Git: fica só em $RUNNER_TEMP, que some com o runner.
+on:
+  schedule:
+    - cron: "0 7 * * *" # 07:00 UTC, antes do resumo diário (10:00 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write # só para abrir o aviso de falha
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+env:
+  # Projeto de staging e bucket privado que recebem os dumps (sem segredo).
+  STORAGE_URL: https://asjqhysauzumvwardcxp.supabase.co/storage/v1
+  BUCKET: backups
+  RETENTION_DAYS: "30"
+
+jobs:
+  backup:
+    name: backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - name: Instalar o cliente do Postgres 17
+        run: |
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y --no-install-recommends postgresql-client-17
+
+      - name: Gerar o dump comprimido
+        run: |
+          file="$RUNNER_TEMP/avitech-$(date -u +%Y%m%dT%H%M%SZ).dump"
+          pg_dump --format=custom --compress=9 --no-owner --no-privileges \
+            --file="$file" "$BACKUP_DATABASE_URL"
+          pg_restore --list "$file" > /dev/null
+          test -s "$file"
+          echo "DUMP_FILE=$file" >> "$GITHUB_ENV"
+          echo "Dump gerado: $(basename "$file"), $(stat -c %s "$file") bytes"
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+
+      - name: Enviar o dump ao armazenamento
+        run: |
+          name=$(basename "$DUMP_FILE")
+          curl --silent --show-error --fail --retry 3 --retry-all-errors \
+            --request POST "$STORAGE_URL/object/$BUCKET/$name" \
+            --header "Authorization: Bearer $BACKUP_STORAGE_KEY" \
+            --header "Content-Type: application/octet-stream" \
+            --data-binary "@$DUMP_FILE" > /dev/null
+          echo "Enviado: $name"
+        env:
+          BACKUP_STORAGE_KEY: ${{ secrets.BACKUP_STORAGE_KEY }}
+
+      - name: Conferir o arquivo gravado
+        run: |
+          name=$(basename "$DUMP_FILE")
+          local_size=$(stat -c %s "$DUMP_FILE")
+          remote_size=$(curl --silent --show-error --fail \
+            --request POST "$STORAGE_URL/object/list/$BUCKET" \
+            --header "Authorization: Bearer $BACKUP_STORAGE_KEY" \
+            --header "Content-Type: application/json" \
+            --data "{\"prefix\":\"\",\"search\":\"$name\",\"limit\":10}" \
+            | jq -r --arg n "$name" '.[] | select(.name == $n) | .metadata.size')
+          echo "Tamanho local: $local_size; no armazenamento: $remote_size"
+          test "$remote_size" = "$local_size"
+        env:
+          BACKUP_STORAGE_KEY: ${{ secrets.BACKUP_STORAGE_KEY }}
+
+      # A limpeza vem depois da conferência: se o envio falhar, nada é apagado.
+      - name: Remover os dumps com mais de 30 dias
+        run: |
+          limit=$(date -u -d "-$RETENTION_DAYS days" +%Y%m%d)
+          old=$(curl --silent --show-error --fail \
+            --request POST "$STORAGE_URL/object/list/$BUCKET" \
+            --header "Authorization: Bearer $BACKUP_STORAGE_KEY" \
+            --header "Content-Type: application/json" \
+            --data '{"prefix":"","limit":1000}' \
+            | jq -c --arg limit "$limit" '[.[].name
+                | select(test("^avitech-[0-9]{8}T[0-9]{6}Z\\.dump$"))
+                | select(.[8:16] < $limit)]')
+          echo "Para remover: $(echo "$old" | jq 'length') arquivo(s)"
+          if [ "$(echo "$old" | jq 'length')" -gt 0 ]; then
+            curl --silent --show-error --fail \
+              --request DELETE "$STORAGE_URL/object/$BUCKET" \
+              --header "Authorization: Bearer $BACKUP_STORAGE_KEY" \
+              --header "Content-Type: application/json" \
+              --data "{\"prefixes\":$old}" > /dev/null
+          fi
+        env:
+          BACKUP_STORAGE_KEY: ${{ secrets.BACKUP_STORAGE_KEY }}
+
+      - name: Apagar o dump do runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/avitech-*.dump
+
+      - name: Avisar o responsável se o backup falhou
+        if: failure()
+        run: |
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "Backup diário falhou ($(date -u +%Y-%m-%d))" \
+            --assignee "$GITHUB_REPOSITORY_OWNER" \
+            --body "O workflow backup falhou. Execução: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        env:
+          GH_TOKEN: ${{ github.token }}

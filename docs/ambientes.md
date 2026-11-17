@@ -73,3 +73,27 @@ Secrets de cada GitHub Environment (`staging` e `production`), sem valores no re
 | `DIRECT_URL` | conexão direta do Postgres, só no `db:deploy` |
 
 O endereço usado no health check (`API_URL`) está no topo de cada workflow; mude-o ao ganhar domínio próprio.
+
+## Backup
+
+O plano gratuito do Supabase não inclui backups do projeto, então o `backup.yml` faz um `pg_dump` diário do banco de produção.
+
+| Item | Definição |
+| --- | --- |
+| Agenda | todo dia às 07:00 UTC (antes do resumo diário das 10:00 UTC) e por `workflow_dispatch` |
+| Formato | `pg_dump --format=custom --compress=9`, arquivo `avitech-AAAAMMDDTHHMMSSZ.dump` |
+| Destino | bucket privado `backups` no Storage do projeto Supabase de **staging** (projeto separado do de produção) |
+| Retenção | 30 dias; depois de conferir o envio, o workflow apaga o que for mais antigo |
+| Falha | o workflow abre uma issue atribuída ao dono do repositório |
+| Sigilo | o dump fica só no runner e é apagado; não há `upload-artifact` e nada vai para o Git |
+
+Decisão registrada: o armazenamento é do próprio Supabase (outro projeto da mesma conta). Protege contra perder o banco de produção, mas não contra perder a conta do Supabase; o critério "externo ao Supabase" da história foi dispensado.
+
+Secrets do Environment `production`:
+
+| Secret | Uso |
+| --- | --- |
+| `BACKUP_DATABASE_URL` | papel `avitech_backup` (só `SELECT`, com `BYPASSRLS`); usar o **pooler em modo sessão** (porta 5432), porque a conexão direta é IPv6 e o `pg_dump` não funciona no modo transação |
+| `BACKUP_STORAGE_KEY` | chave de serviço (`service_role`) do projeto de staging, para gravar no bucket |
+
+Restauração: baixar o `.dump` do bucket e rodar `pg_restore --no-owner --dbname=<banco novo> arquivo.dump`, num banco à parte.

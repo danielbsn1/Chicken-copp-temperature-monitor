@@ -21,7 +21,7 @@ A Data API está desativada nos dois projetos (Integrations › Data API). Nada 
 | --- | --- | --- |
 | `avitech_app` | staging e produção | `SELECT`, `INSERT`, `UPDATE`, `DELETE` nas tabelas e `USAGE`/`SELECT` nas sequências; sem alterar estrutura |
 | `avitech_migrator` | staging e produção | `USAGE` e `CREATE` no schema `public`; dono das tabelas; usado só nas migrações |
-| `avitech_backup` | só produção | somente `SELECT`; usado pelo workflow de backup (criado na história do backup) |
+| `avitech_backup` | só produção | somente `SELECT` (com `BYPASSRLS`, para o `pg_dump` ler as tabelas com RLS); usado pelo workflow de backup |
 
 Todos com `LOGIN` e sem `SUPERUSER`, `CREATEDB`, `CREATEROLE` ou `BYPASSRLS`. Cada papel tem senha própria, gerada aleatoriamente, e a senha nunca aparece no Git.
 
