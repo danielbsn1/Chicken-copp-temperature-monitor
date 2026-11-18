@@ -1,55 +1,69 @@
-<<<<<<< HEAD
-# Monitor de temperatura do galinheiro
+# Avitech — monitor de temperatura do galinheiro
 
-Um ESP32 mede a temperatura, liga o ventilador sozinho (30 °C liga, 28 °C desliga) e envia o histórico para um painel web. O controle é local e não depende de internet; a nuvem só guarda, mostra e vigia.
+Um ESP32 mede a temperatura, liga o ventilador sozinho (30 °C liga, 28 °C desliga) e envia o histórico em lotes de 15 min para um painel web. O controle é local e não depende de internet; a nuvem só guarda, mostra e vigia.
 
-Design completo em [docs/](docs/): o roteiro e o diagrama de arquitetura.
+O design completo está em [docs/](docs/).
 
 ## Estrutura
 
 | Pasta | Conteúdo |
 | --- | --- |
+| `api/` | Back-end (Node.js, Express, Prisma) |
+| `web/` | Painel (React, Vite) |
 | `firmware/` | ESP32 (PlatformIO) |
-| `api/` | Backend Node.js + TypeScript (Fastify, Prisma) |
-| `web/` | Painel React (Vite) |
-| `docs/` | Roteiro e diagrama |
+| `docs/` | System design e diagramas |
+| `.github/` | Workflows, Dependabot, modelo de pull request e CODEOWNERS |
+
+Na raiz também ficam `docker-compose.yml` (Postgres local), `.editorconfig`, `.gitignore` e `.nvmrc`.
 
 ## Requisitos
 
-- Node.js 24 (`.nvmrc`) e pnpm
+- Node.js 22 (`.nvmrc`) e pnpm
 - Docker, para o Postgres local
 - PlatformIO, para o firmware
 
-## Rodar a API e o painel
+## Ambiente local
 
-```
-# API (http://localhost:3333, documentação em /docs)
-cd api
-pnpm install
-pnpm dev
+1. Suba o Postgres 16 (porta 5433, volume nomeado):
 
-# Painel (http://localhost:5173)
-cd web
-pnpm install
-pnpm dev
-```
+   ```
+   docker compose up -d
+   ```
 
-O banco (Postgres no Docker) entra na Fase 2: `cp .env.example api/.env` e `docker compose up -d`. Em produção o banco é o Aurora DSQL.
+2. Copie as variáveis de cada app e preencha. Os arquivos `.env` ficam fora do Git.
 
-## Contrato OpenAPI
+   ```
+   cp api/.env.example api/.env
+   cp web/.env.example web/.env.local
+   ```
 
-A API gera o `api/openapi.json` a partir dos schemas `zod`, e o painel gera os tipos a partir dele:
+3. Instale as dependências, aplique as migrações e inicie a API (http://localhost:3333):
 
-```
-cd api && pnpm openapi:export   # atualiza api/openapi.json
-cd web && pnpm gen:api          # atualiza web/src/api/schema.d.ts
-```
+   ```
+   cd api
+   pnpm install
+   pnpm db:deploy
+   pnpm dev
+   ```
 
-Os dois arquivos vão para o Git, e o CI falha se algum estiver desatualizado.
+4. Em outro terminal, inicie o painel (http://localhost:5173):
 
-## CI (GitHub Actions)
+   ```
+   cd web
+   pnpm install
+   pnpm dev
+   ```
 
-Um workflow por pasta, que roda só quando ela muda: `api` (lint, tipos, testes, build e OpenAPI atualizado), `web` (tipos da API, lint, tipos e build) e `firmware` (`pio run`).
+## Scripts
+
+Cada app tem os scripts no próprio `package.json`; o mesmo comando roda no computador e na pipeline.
+
+| App | Scripts |
+| --- | --- |
+| `api/` | `dev`, `lint`, `format:check`, `typecheck`, `depcruise`, `test`, `build`, `db:deploy`, `device:create`, `user:create` |
+| `web/` | `dev`, `lint`, `format:check`, `typecheck`, `depcruise`, `test`, `build`, `preview` |
+
+`pnpm device:create` cadastra um dispositivo (ou troca a chave dele) e mostra a chave uma única vez.
 
 ## Firmware
 
@@ -60,9 +74,15 @@ pio run
 pio run -t upload
 ```
 
-## Status
+## Branches e pull requests
 
-Em planejamento. As fases estão no roteiro em `docs/`.
-=======
-# Chicken-copp-temperature-monitor
->>>>>>> e24db33aa0b9bc3cdc0c8db2259ecf4578f17744
+| Branch | Papel | Merge |
+| --- | --- | --- |
+| `main` | Produção | Merge commit, vindo de `development` |
+| `development` | Integração e staging | Squash, vindo de `feat/*` e `fix/*` |
+| `feat/<módulo>` e `fix/<assunto>` | Uma alteração por branch, criada a partir da última `development` | Apagada após o merge |
+
+- Ninguém faz push direto em `main` nem em `development`; toda alteração entra por pull request, com o check `ci` verde e 1 aprovação.
+- O título do pull request segue `tipo(escopo): descrição`, com tipo `feat`, `fix`, `refactor`, `test`, `docs`, `ci` ou `chore`. Exemplo: `feat(auth): login com cookie de sessão`.
+- O check `ci` (`.github/workflows/ci.yml`) roda em todo pull request para `development` e `main`: os jobs `api` e `web` em paralelo (lint, format:check, typecheck, depcruise, testes com cobertura e build; a `api` também aplica as migrações num Postgres 16 descartável) e o job agregador `ci`, que falha se qualquer um deles falhar. Não usa nenhum segredo.
+- O pull request de `development` para `main` leva o título `release: AAAA-MM-DD`.

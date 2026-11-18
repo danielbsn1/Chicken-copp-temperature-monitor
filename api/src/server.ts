@@ -1,6 +1,9 @@
-import { buildApp } from "./app.js";
+import { createApp } from "./app.js";
+import { logger } from "./core/logger.js";
 
-const app = await buildApp();
+// Só para desenvolvimento local. Na Vercel, a entrada é api/index.ts.
 const port = Number(process.env.PORT ?? 3333);
 
-await app.listen({ port, host: "0.0.0.0" });
+createApp().listen(port, () => {
+  logger.info(`API em http://localhost:${port}`);
+});
