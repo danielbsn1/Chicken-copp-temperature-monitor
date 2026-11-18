@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "[ \"$VERCEL_ENV\" != \"production\" ]",
   "regions": ["gru1"],
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }],
   "crons": [{ "path": "/api/jobs/daily-report", "schedule": "0 10 * * *" }]
