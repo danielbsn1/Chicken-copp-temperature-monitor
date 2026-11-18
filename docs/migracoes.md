@@ -1,13 +1,36 @@
 # Migrações do banco
 
-O workflow `migrate.yml` aplica as migrações (`pnpm db:deploy`) e nada mais: a Vercel publica a API e o painel pela integração Git.
+A Vercel publica a API e o painel pela integração Git, mas não aplica migrações. Por enquanto elas são aplicadas à mão, uma vez por ambiente e só quando há migração nova, por quem tem a senha do papel `avitech_migrator`. Um workflow `migrate.yml` (merge em `development` migra o staging; merge em `main`, depois da aprovação do environment `production`, migra a produção) fica para quando mais de uma pessoa mexer no banco ou as migrações ficarem frequentes.
 
-| Evento | Job | Environment | Depois da migração |
-|---|---|---|---|
-| push em `development` | `migrate staging` | `staging` | `GET /api/health` do staging deve responder 200 |
-| push em `main` | `migrate production` | `production` (com aprovação) | `GET /api/health` da produção deve responder 200 |
+## Ordem
 
-O secret `DIRECT_URL` existe em cada environment e aponta para o banco do ambiente (usuário `avitech_migrator`, porta 5432). O workflow mascara usuário, senha e host da conexão nos logs, e o `health-check.sh` falha se a API não responder 200 em cerca de 1 minuto.
+1. Migração mergeada em `development`: aplicar no **staging**.
+2. Conferir que `GET /api/health` do staging responde 200.
+3. Só então, com o mesmo código em `main`, aplicar na **produção**.
+
+## Comando
+
+Use a conexão do Session pooler do ambiente (porta 5432, usuário `avitech_migrator.<referência>`, ver `docs/supabase.md`). A `DIRECT_URL` é digitada no terminal sem eco: não vai para o histórico do shell, para `.env` nem para log.
+
+Linux/macOS (bash/zsh):
+
+```bash
+cd api
+read -rsp "DIRECT_URL: " DIRECT_URL && export DIRECT_URL && echo
+pnpm db:deploy
+unset DIRECT_URL
+```
+
+PowerShell 7+:
+
+```powershell
+cd api
+$env:DIRECT_URL = Read-Host "DIRECT_URL" -MaskInput
+pnpm db:deploy
+Remove-Item Env:DIRECT_URL
+```
+
+O log mostra cada migração aplicada (`Applying migration ...`) e termina com `All migrations have been successfully applied`. Se uma migração é inválida, o comando falha com a mensagem do Prisma e o código de saída ≠ 0; o Prisma não imprime a conexão. Nada novo é aplicado até corrigir (`prisma migrate resolve`).
 
 ## Regra: migrações compatíveis com o código anterior
 
@@ -18,5 +41,3 @@ A Vercel pode publicar o código antes ou depois da migração, então durante a
 - **Renomear:** criar a nova, copiar os dados, trocar o código, remover a antiga (migrações e deploys separados).
 - **Endurecer restrição (`NOT NULL`, CHECK, FK):** só depois de o código parar de gravar valores que a violam e de os dados existentes estarem corrigidos.
 - **Migração já aplicada nunca é editada:** correções entram como migração nova.
-
-Se uma migração falha, o job falha com a mensagem do Prisma no log e nada novo é aplicado até corrigir (`prisma migrate resolve`).
