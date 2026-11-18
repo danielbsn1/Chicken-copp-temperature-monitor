@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "[ \"$VERCEL_ENV\" != \"production\" ]",
+  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"development\" ] && [ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ]",
   "regions": ["gru1"],
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }],
   "crons": [{ "path": "/api/jobs/daily-report", "schedule": "0 10 * * *" }]
