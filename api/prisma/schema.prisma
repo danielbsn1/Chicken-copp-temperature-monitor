@@ -78,3 +78,12 @@ model LoginAttempt {
   @@index([key, at])
   @@map("login_attempts")
 }
+
+// SPIKE (descartável): ver docs/spike-prisma-pooler.md
+model PoolerProbe {
+  id        Int      @id @default(autoincrement())
+  nonce     String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("pooler_probe")
+}
