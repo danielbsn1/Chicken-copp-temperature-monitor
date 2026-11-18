@@ -21,10 +21,12 @@ export const errorHandler: ErrorRequestHandler = (err: unknown, req, res, _next)
   const log = req.log ?? logger;
 
   if (err instanceof AppError) {
+    log.warn({ code: err.code, status: err.status }, err.message);
     return res.status(err.status).json(body(err.code, err.message, err.details));
   }
 
   if (err instanceof ZodError) {
+    log.warn({ code: "VALIDATION_ERROR", status: 400 }, "entrada inválida");
     const details = err.issues.map((i) => ({
       path: i.path.join("."),
       message: i.message,
@@ -35,9 +37,11 @@ export const errorHandler: ErrorRequestHandler = (err: unknown, req, res, _next)
   // Erros do body-parser (corpo grande demais ou JSON malformado).
   const type = (err as { type?: string } | null)?.type;
   if (type === "entity.too.large") {
+    log.warn({ code: "PAYLOAD_TOO_LARGE", status: 413 }, "corpo maior que 100 KB");
     return res.status(413).json(body("PAYLOAD_TOO_LARGE", "Corpo maior que 100 KB"));
   }
   if (type === "entity.parse.failed") {
+    log.warn({ code: "VALIDATION_ERROR", status: 400 }, "JSON inválido");
     return res.status(400).json(body("VALIDATION_ERROR", "JSON inválido"));
   }
 

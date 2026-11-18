@@ -109,3 +109,70 @@ describe("error-handler", () => {
     expect(JSON.stringify(res.body)).not.toContain("segredo-interno");
   });
 });
+
+describe("error-handler: registro e outros erros", () => {
+  function appWith(thrower: () => never, logged: unknown[]) {
+    const app = express();
+    app.use((req, _res, next) => {
+      (req as unknown as { log: unknown }).log = {
+        error: (...a: unknown[]) => logged.push(["error", ...a]),
+        warn: (...a: unknown[]) => logged.push(["warn", ...a]),
+      };
+      next();
+    });
+    app.get("/x", thrower);
+    app.use(errorHandler);
+    return app;
+  }
+
+  it("registra erro previsto 4xx como warn", async () => {
+    const logged: unknown[] = [];
+    await request(
+      appWith(() => {
+        throw new ForbiddenError();
+      }, logged),
+    ).get("/x");
+    expect(logged).toHaveLength(1);
+    expect((logged[0] as unknown[])[0]).toBe("warn");
+  });
+
+  it("registra erro não previsto como error, com o detalhe só no log", async () => {
+    const logged: unknown[] = [];
+    const res = await request(
+      appWith(() => {
+        throw new Error("detalhe-interno");
+      }, logged),
+    ).get("/x");
+    expect((logged[0] as unknown[])[0]).toBe("error");
+    expect(JSON.stringify(res.body)).not.toContain("detalhe-interno");
+  });
+
+  it("ZodError vira 400 com details", async () => {
+    const res = await request(
+      appWith(() => {
+        z.object({ a: z.string() }).parse({});
+        throw new Error("inalcançável");
+      }, []),
+    ).get("/x");
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res.body.error.details[0].path).toBe("a");
+  });
+
+  it("corpo maior que 100 KB vira 413 e JSON malformado vira 400", async () => {
+    const app = express();
+    app.use(express.json({ limit: "100kb" }));
+    app.post("/x", (_req, res) => res.json({}));
+    app.use(errorHandler);
+    const big = await request(app)
+      .post("/x")
+      .send({ a: "x".repeat(110_000) });
+    expect(big.status).toBe(413);
+    const bad = await request(app)
+      .post("/x")
+      .set("Content-Type", "application/json")
+      .send("{oops");
+    expect(bad.status).toBe(400);
+    expect(bad.body.error.message).toBe("JSON inválido");
+  });
+});
