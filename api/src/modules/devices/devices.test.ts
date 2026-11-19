@@ -16,6 +16,7 @@ interface Row {
 const store = vi.hoisted(() => ({
   rows: new Map<string, unknown>(),
   touches: [] as unknown[][],
+  firmwares: [] as unknown[][],
 }));
 const rows = store.rows as Map<string, Row>;
 
@@ -36,6 +37,9 @@ vi.mock("./devices.repository.js", () => ({
   touch: async (...args: unknown[]) => {
     store.touches.push(args);
   },
+  setFirmware: async (...args: unknown[]) => {
+    store.firmwares.push(args);
+  },
 }));
 
 const latestReading = vi.hoisted(() => vi.fn());
@@ -44,8 +48,15 @@ vi.mock("../readings/index.js", () => ({
   latestReading,
 }));
 
-const { authenticate, generateKey, getStatus, hashKey, registerDevice, touch } =
-  await import("./devices.service.js");
+const {
+  authenticate,
+  generateKey,
+  getStatus,
+  hashKey,
+  registerDevice,
+  setFirmware,
+  touch,
+} = await import("./devices.service.js");
 const { devicesRouter } = await import("./index.js");
 
 const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
@@ -53,6 +64,7 @@ const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
 beforeEach(() => {
   rows.clear();
   store.touches.length = 0;
+  store.firmwares.length = 0;
   latestReading.mockReset();
 });
 
@@ -117,6 +129,14 @@ describe("touch", () => {
   it("usa o instante atual quando não recebe nenhum", async () => {
     await touch("galpao-1");
     expect(store.touches[0]?.[1]).toBeInstanceOf(Date);
+  });
+});
+
+describe("setFirmware", () => {
+  it("repassa o id, a versão e a transação ao repositório", async () => {
+    const tx = { tx: true };
+    await setFirmware("galpao-1", "1.2.0", tx as never);
+    expect(store.firmwares).toEqual([["galpao-1", "1.2.0", tx]]);
   });
 });
 

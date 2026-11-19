@@ -23,7 +23,7 @@ describe("db", () => {
     await import("./db.js");
     expect(pg.calls).toEqual([
       {
-        connectionString: "postgres://chicken:chicken@localhost:5433/chicken",
+        connectionString: process.env.DATABASE_URL,
         max: 1,
       },
     ]);
