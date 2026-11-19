@@ -29,3 +29,7 @@ export async function touch(id: string, seenAt: Date, tx?: Tx): Promise<void> {
     Prisma.sql`UPDATE devices SET last_seen_at = GREATEST(last_seen_at, ${seenAt}) WHERE id = ${id}`,
   );
 }
+
+export async function setFirmware(id: string, fwVersion: string, tx?: Tx): Promise<void> {
+  await client(tx).device.update({ where: { id }, data: { fwVersion } });
+}

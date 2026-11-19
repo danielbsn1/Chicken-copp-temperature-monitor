@@ -16,3 +16,16 @@ describe("latestReading", () => {
     expect(await latestReading("g")).toBe(reading);
   });
 });
+
+describe("saveMany", () => {
+  it("repassa as linhas e a transação e devolve quantas foram gravadas", async () => {
+    const createMany = vi.fn(async () => 2);
+    vi.resetModules();
+    vi.doMock("./readings.repository.js", () => ({ createMany }));
+    const { saveMany } = await import("./readings.service.js");
+    const rows = [{ deviceId: "g", ts: new Date(), tempC: 25, humPct: 50, fanOn: false }];
+    const tx = { tx: true };
+    expect(await saveMany(rows, tx as never)).toBe(2);
+    expect(createMany).toHaveBeenCalledWith(rows, tx);
+  });
+});

@@ -43,6 +43,14 @@ export function touch(
   return repository.touch(deviceId, seenAt, tx);
 }
 
+export function setFirmware(
+  deviceId: string,
+  fwVersion: string,
+  tx?: repository.Tx,
+): Promise<void> {
+  return repository.setFirmware(deviceId, fwVersion, tx);
+}
+
 export async function getStatus(deviceId: string) {
   const device = await repository.findById(deviceId);
   if (!device) throw new NotFoundError("Dispositivo não encontrado");

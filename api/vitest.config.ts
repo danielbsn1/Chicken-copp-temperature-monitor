@@ -5,8 +5,10 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     env: {
       NODE_ENV: "test",
-      DATABASE_URL: "postgres://chicken:chicken@localhost:5433/chicken",
-      DIRECT_URL: "postgres://chicken:chicken@localhost:5433/chicken",
+      DATABASE_URL:
+        process.env.DATABASE_URL ?? "postgres://chicken:chicken@localhost:5433/chicken",
+      DIRECT_URL:
+        process.env.DIRECT_URL ?? "postgres://chicken:chicken@localhost:5433/chicken",
       SESSION_SECRET: "segredo-de-teste-com-mais-de-32-caracteres",
       CRON_SECRET: "segredo-do-cron-so-para-teste",
       TELEGRAM_BOT_TOKEN: "123456:token-de-teste",
