@@ -9,3 +9,10 @@ export function getSession(signal?: AbortSignal): Promise<Session> {
 export function postLogout(): Promise<void> {
   return http("/auth/logout", { method: "POST" }, z.undefined());
 }
+
+export function postLogin(credentials: {
+  email: string;
+  password: string;
+}): Promise<Session> {
+  return http("/auth/login", { method: "POST", body: credentials }, sessionSchema);
+}
