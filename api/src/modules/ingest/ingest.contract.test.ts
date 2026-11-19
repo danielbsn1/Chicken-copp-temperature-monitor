@@ -1,8 +1,8 @@
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../app.js";
-import { env } from "../../config/env.js";
 import { db } from "../../core/db.js";
+import { isDatabaseReady } from "../../test-utils/db-ready.js";
 import { registerDevice } from "../devices/index.js";
 import {
   invalidEvents,
@@ -15,20 +15,8 @@ import {
   validSample,
 } from "./__fixtures__/payloads.js";
 
-// Contrato do /ingest contra um Postgres real e descartável. Por segurança só roda
-// contra um banco local. Fora da CI, sem banco migrado o bloco é pulado; na CI,
-// banco ausente ou sem migração é falha (o gate não pode passar em branco).
-const isLocal = /@(localhost|127\.0\.0\.1)[:/]/.test(env.DATABASE_URL);
-const dbReady =
-  isLocal &&
-  (await db.device.count().then(
-    () => true,
-    () => false,
-  ));
-
-if (process.env.CI && !dbReady) {
-  throw new Error("CI sem Postgres migrado: o contrato do /ingest não pode ser pulado.");
-}
+// Contrato do /ingest contra um Postgres real e descartável (ver test-utils/db-ready.ts).
+const dbReady = await isDatabaseReady(() => db.device.count());
 
 const ID = "contrato-ingest";
 const ID_LIMITE = "contrato-ingest-limite";
