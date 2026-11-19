@@ -12,3 +12,6 @@ const LABELS: Record<string, string> = {
 export function eventLabel(type: string): string {
   return LABELS[type] ?? type;
 }
+
+/** Os 7 tipos que o dispositivo envia, na ordem do filtro. */
+export const EVENT_TYPES = Object.keys(LABELS);

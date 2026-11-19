@@ -1,0 +1,35 @@
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 18rem;
+  margin-bottom: var(--space-3);
+}
+.select {
+  font: inherit;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+}
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.time {
+  color: var(--color-muted);
+  min-width: 10rem;
+}
+.note {
+  color: var(--color-muted);
+  margin: 0;
+}
