@@ -32,3 +32,14 @@ export function formatTime(value: DateInput): string {
 export function toSaoPauloDay(value: DateInput): string {
   return day.format(new Date(value));
 }
+
+const dayMonth = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: TIME_ZONE,
+  day: "2-digit",
+  month: "2-digit",
+});
+
+/** "14/11" no fuso de São Paulo, para o eixo de períodos longos. */
+export function formatDayMonth(value: DateInput): string {
+  return dayMonth.format(new Date(value));
+}
