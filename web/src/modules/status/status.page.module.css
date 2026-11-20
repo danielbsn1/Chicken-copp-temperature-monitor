@@ -1,0 +1,20 @@
+.badge {
+  margin: 0 0 var(--space-3);
+}
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.list dt {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+.list dd {
+  margin: 0;
+}
+.big {
+  font-size: 1.75rem;
+  font-weight: 700;
+}

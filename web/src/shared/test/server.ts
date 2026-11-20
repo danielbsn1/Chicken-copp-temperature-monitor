@@ -9,6 +9,27 @@ export const handlers = [
   http.get(`${API}/auth/me`, () =>
     HttpResponse.json({ id: "u1", email: "dono@example.com" }),
   ),
+  http.get(`${API}/status`, () =>
+    HttpResponse.json({
+      reading: { ts: new Date().toISOString(), tempC: 27.4, humPct: 62, fanOn: false },
+      fanOn: false,
+      lastSeenAt: new Date().toISOString(),
+      fwVersion: "2.0.1",
+    }),
+  ),
+  http.get(`${API}/readings`, ({ request }) => {
+    const url = new URL(request.url);
+    return HttpResponse.json({
+      deviceId: url.searchParams.get("deviceId"),
+      from: url.searchParams.get("from"),
+      to: url.searchParams.get("to"),
+      bucket: url.searchParams.get("bucket"),
+      points: [
+        { ts: "2026-11-14T13:00:00.000Z", minC: 26, avgC: 27, maxC: 28.5 },
+        { ts: "2026-11-14T13:05:00.000Z", minC: 27, avgC: 29, maxC: 31 },
+      ],
+    });
+  }),
   http.post(`${API}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
 ];
 

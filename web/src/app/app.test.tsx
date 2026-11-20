@@ -38,6 +38,9 @@ describe("rotas", () => {
     expect(
       await screen.findByRole("heading", { name: "Painel", level: 1 }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Os dados chegam em lotes de 15 min.",
+    );
     expect(screen.getByRole("heading", { name: "Situação atual" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Temperatura" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Eventos" })).toBeInTheDocument();
