@@ -8,6 +8,8 @@ import { describe, expect, it } from "vitest";
 import { API, server } from "../shared/test/server";
 import { ConfigErrorPage } from "./pages/ConfigErrorPage";
 import { createQueryClient } from "./query-client";
+import { App } from "./App";
+import { queryClient } from "./query-client";
 import { routes } from "./routes";
 
 function renderApp(route: string) {
@@ -36,6 +38,9 @@ describe("rotas", () => {
     expect(
       await screen.findByRole("heading", { name: "Painel", level: 1 }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Os dados chegam em lotes de 15 min.",
+    );
     expect(screen.getByRole("heading", { name: "Situação atual" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Temperatura" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Eventos" })).toBeInTheDocument();
@@ -90,5 +95,24 @@ describe("ConfigErrorPage", () => {
   it("lista os problemas de configuração", () => {
     render(<ConfigErrorPage issues={["VITE_API_URL: Invalid URL"]} />);
     expect(screen.getByRole("alert")).toHaveTextContent("VITE_API_URL");
+  });
+});
+
+describe("401 depois do início", () => {
+  it("limpa o cache e vai para /login?next=<rota atual>", async () => {
+    window.history.pushState({}, "", "/relatorios");
+    render(<App />);
+    expect(
+      await screen.findByRole("heading", { name: "Relatórios", level: 1 }),
+    ).toBeInTheDocument();
+
+    sessionExpired(); // a sessão vence depois de o painel já estar aberto
+    await queryClient.refetchQueries({ queryKey: ["session"] }).catch(() => undefined);
+
+    expect(await screen.findByRole("heading", { name: "Entrar" })).toBeInTheDocument();
+    expect(window.location.pathname + window.location.search).toBe(
+      "/login?next=%2Frelatorios",
+    );
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
   });
 });
