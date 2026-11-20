@@ -1,16 +1,7 @@
 import { z } from "zod";
+import { EVENT_TYPES } from "../events/index.js";
 
 export const MAX_ITEMS = 100;
-
-export const EVENT_TYPES = [
-  "fan_on",
-  "fan_off",
-  "temp_critical",
-  "sensor_failure",
-  "sensor_recovered",
-  "boot",
-  "connectivity_restored",
-] as const;
 
 /**
  * Formato do lote. Os itens ficam sem forma aqui de propósito: um item ruim não
