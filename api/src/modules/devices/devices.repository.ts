@@ -33,3 +33,7 @@ export async function touch(id: string, seenAt: Date, tx?: Tx): Promise<void> {
 export async function setFirmware(id: string, fwVersion: string, tx?: Tx): Promise<void> {
   await client(tx).device.update({ where: { id }, data: { fwVersion } });
 }
+
+export function listAll() {
+  return db.device.findMany({ select: { id: true, name: true }, orderBy: { id: "asc" } });
+}

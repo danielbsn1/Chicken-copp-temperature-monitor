@@ -1,2 +1,2 @@
 export { authRouter } from "./auth.routes.js";
-export { registerUser } from "./auth.service.js";
+export { purgeLoginAttempts, registerUser } from "./auth.service.js";
