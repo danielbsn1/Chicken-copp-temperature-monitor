@@ -10,7 +10,10 @@ const ping = vi.hoisted(() => vi.fn());
 
 vi.mock("./ingest.repository.js", () => ({ runInTransaction }));
 vi.mock("../readings/index.js", () => ({ saveMany: saveReadings }));
-vi.mock("../events/index.js", () => ({ saveMany: saveEvents }));
+vi.mock("../events/index.js", async (importActual) => ({
+  ...(await importActual<typeof import("../events/index.js")>()),
+  saveMany: saveEvents,
+}));
 vi.mock("../devices/index.js", () => ({ touch, setFirmware }));
 vi.mock("../health/index.js", () => ({ pingHealthchecks: ping }));
 

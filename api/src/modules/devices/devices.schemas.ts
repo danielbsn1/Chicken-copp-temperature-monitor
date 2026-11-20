@@ -1,8 +1,5 @@
 import { z } from "zod";
-
-const deviceId = z
-  .string()
-  .regex(/^[a-z0-9][a-z0-9-]{0,63}$/, "use minúsculas, números e hífen (até 64)");
+import { deviceId } from "../../core/schemas.js";
 
 export const statusQuery = z.object({ deviceId });
 
