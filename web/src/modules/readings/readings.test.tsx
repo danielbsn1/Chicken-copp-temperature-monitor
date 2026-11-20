@@ -70,6 +70,18 @@ describe("ReadingsChart", () => {
     },
   );
 
+  it("mostra mínima, média e máxima do período em cartões", async () => {
+    renderWithProviders(<ReadingsChart />);
+    await screen.findByRole("img");
+    expect(screen.getByText("Mínima no período").nextSibling).toHaveTextContent(
+      "26,0 °C",
+    );
+    expect(screen.getByText("Média no período").nextSibling).toHaveTextContent("28,0 °C");
+    expect(screen.getByText("Máxima no período").nextSibling).toHaveTextContent(
+      "31,0 °C",
+    );
+  });
+
   it("sem leituras mostra o estado vazio", async () => {
     server.use(
       http.get(`${API}/readings`, () =>

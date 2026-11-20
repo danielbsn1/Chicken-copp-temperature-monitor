@@ -8,6 +8,9 @@ import { AppLayout } from "./layout/AppLayout";
 const ReportsPage = lazy(() =>
   import("../modules/reports").then((m) => ({ default: m.ReportsPage })),
 );
+const EventsPage = lazy(() =>
+  import("../modules/events").then((m) => ({ default: m.EventsPage })),
+);
 const PainelPage = lazy(() =>
   import("./pages/PainelPage").then((m) => ({ default: m.PainelPage })),
 );
@@ -35,6 +38,14 @@ export const routes: RouteObject[] = [
             element: (
               <Lazy>
                 <PainelPage />
+              </Lazy>
+            ),
+          },
+          {
+            path: "eventos",
+            element: (
+              <Lazy>
+                <EventsPage />
               </Lazy>
             ),
           },

@@ -15,3 +15,7 @@ export function eventLabel(type: string): string {
 
 /** Os 7 tipos que o dispositivo envia, na ordem do filtro. */
 export const EVENT_TYPES = Object.keys(LABELS);
+
+export function isEventType(value: string): boolean {
+  return EVENT_TYPES.includes(value);
+}
