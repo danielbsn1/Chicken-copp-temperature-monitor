@@ -30,6 +30,16 @@ export const handlers = [
       ],
     });
   }),
+  http.get(`${API}/events`, ({ request }) => {
+    const url = new URL(request.url);
+    return HttpResponse.json({
+      deviceId: url.searchParams.get("deviceId"),
+      events: [
+        { ts: "2026-11-14T13:05:00.000Z", type: "fan_off", detail: null },
+        { ts: "2026-11-14T13:00:00.000Z", type: "fan_on", detail: { tempC: 31 } },
+      ],
+    });
+  }),
   http.post(`${API}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
 ];
 
