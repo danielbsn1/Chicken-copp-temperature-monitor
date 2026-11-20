@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router";
 import { useLogout } from "../../modules/auth";
+import { ThemeToggle } from "../../shared/theme";
 import { Button } from "../../shared/ui";
 import styles from "./AppLayout.module.css";
 
@@ -20,6 +21,7 @@ export function AppLayout() {
             Relatórios
           </NavLink>
         </nav>
+        <ThemeToggle />
         <Button
           variant="secondary"
           onClick={() => logout.mutate()}

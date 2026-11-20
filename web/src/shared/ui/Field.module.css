@@ -8,8 +8,25 @@
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 .error {
   color: var(--color-danger);
   margin: 0;
+}
+.control {
+  position: relative;
+  display: flex;
+}
+.control .input {
+  flex: 1;
+  min-width: 0;
+}
+.trailing {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: var(--space-2);
+  display: flex;
+  align-items: center;
 }
