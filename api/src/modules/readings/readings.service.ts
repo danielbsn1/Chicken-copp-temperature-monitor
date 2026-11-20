@@ -14,6 +14,11 @@ export function saveMany(rows: NewReading[], tx?: Tx): Promise<number> {
   return repository.createMany(rows, tx);
 }
 
+/** Mínima, máxima, média, minutos de ventilador (1 amostra = 1 min) e contagem do dia de São Paulo. */
+export function dayStats(deviceId: string, day: string) {
+  return repository.dayStats(deviceId, day);
+}
+
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
 /** Série de temperatura (mínima, média e máxima) por bucket; buckets sem leitura não aparecem. */
