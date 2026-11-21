@@ -18,7 +18,6 @@ export default defineConfig(({ command, mode }) => {
       testTimeout: 15_000,
       env: {
         VITE_API_URL: "http://localhost:3333/api",
-        VITE_DEVICE_ID: "galinheiro-teste",
       },
       coverage: {
         provider: "v8",

@@ -119,8 +119,9 @@ describe("ReadingsChart", () => {
   it("atualiza a cada 60 s", async () => {
     const { client } = renderWithProviders(<ReadingsChart />);
     await screen.findByRole("img");
-    const observer = client.getQueryCache().find({ queryKey: ["readings", "24h"] })
-      ?.observers[0];
+    const observer = client
+      .getQueryCache()
+      .find({ queryKey: ["readings", "galinheiro-teste", "24h"] })?.observers[0];
     expect(observer?.options.refetchInterval).toBe(60_000);
   });
 });

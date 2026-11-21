@@ -1,8 +1,10 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import type { RouteObject } from "react-router";
 import { LoginPage, RequireAuth } from "../modules/auth";
+import { DevicesRoute, PAIR_PATH, PairPage } from "../modules/devices";
 import { Spinner } from "../shared/ui";
 import { AppLayout } from "./layout/AppLayout";
+import { SignupPage } from "./pages/SignupPage";
 
 // Páginas carregadas sob demanda.
 const ReportsPage = lazy(() =>
@@ -28,34 +30,47 @@ export const routes: RouteObject[] = [
     element: <LoginPage />,
   },
   {
+    path: "/cadastro",
+    element: <SignupPage />,
+  },
+  {
     element: <RequireAuth />,
     children: [
       {
-        element: <AppLayout />,
+        element: <DevicesRoute />,
         children: [
           {
-            index: true,
-            element: (
-              <Lazy>
-                <PainelPage />
-              </Lazy>
-            ),
-          },
-          {
-            path: "eventos",
-            element: (
-              <Lazy>
-                <EventsPage />
-              </Lazy>
-            ),
-          },
-          {
-            path: "relatorios",
-            element: (
-              <Lazy>
-                <ReportsPage />
-              </Lazy>
-            ),
+            element: <AppLayout />,
+            children: [
+              {
+                path: PAIR_PATH.slice(1),
+                element: <PairPage />,
+              },
+              {
+                index: true,
+                element: (
+                  <Lazy>
+                    <PainelPage />
+                  </Lazy>
+                ),
+              },
+              {
+                path: "eventos",
+                element: (
+                  <Lazy>
+                    <EventsPage />
+                  </Lazy>
+                ),
+              },
+              {
+                path: "relatorios",
+                element: (
+                  <Lazy>
+                    <ReportsPage />
+                  </Lazy>
+                ),
+              },
+            ],
           },
         ],
       },

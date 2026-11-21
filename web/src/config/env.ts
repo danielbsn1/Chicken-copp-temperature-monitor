@@ -3,12 +3,10 @@ import { z } from "zod";
 // Variáveis VITE_* vão para o código do navegador e são públicas: nenhum segredo entra aqui.
 const envSchema = z.object({
   VITE_API_URL: z.url(),
-  VITE_DEVICE_ID: z.string().min(1),
 });
 
 export interface Env {
   apiUrl: string;
-  deviceId: string;
 }
 
 export class EnvError extends Error {
@@ -28,7 +26,6 @@ export function parseEnv(raw: Record<string, unknown>): Env {
   }
   return {
     apiUrl: result.data.VITE_API_URL.replace(/\/+$/, ""),
-    deviceId: result.data.VITE_DEVICE_ID,
   };
 }
 
@@ -53,8 +50,5 @@ export function checkEnv(): string[] | null {
 export const env = {
   get apiUrl() {
     return current().apiUrl;
-  },
-  get deviceId() {
-    return current().deviceId;
   },
 };

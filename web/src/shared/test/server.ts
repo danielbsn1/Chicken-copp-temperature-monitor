@@ -9,6 +9,18 @@ export const handlers = [
   http.get(`${API}/auth/me`, () =>
     HttpResponse.json({ id: "u1", email: "dono@example.com" }),
   ),
+  http.get(`${API}/devices`, () =>
+    HttpResponse.json({
+      devices: [
+        {
+          id: "galinheiro-teste",
+          name: "Galinheiro teste",
+          lastSeenAt: null,
+          fwVersion: null,
+        },
+      ],
+    }),
+  ),
   http.get(`${API}/status`, () =>
     HttpResponse.json({
       reading: { ts: new Date().toISOString(), tempC: 27.4, humPct: 62, fanOn: false },

@@ -3,22 +3,20 @@ import { describe, expect, it } from "vitest";
 import { checkEnv, env, EnvError, parseEnv } from "./env";
 
 describe("parseEnv", () => {
-  it("aceita as duas variáveis e tira a barra final da URL", () => {
-    expect(
-      parseEnv({ VITE_API_URL: "https://api.exemplo.com/api/", VITE_DEVICE_ID: "g1" }),
-    ).toEqual({ apiUrl: "https://api.exemplo.com/api", deviceId: "g1" });
+  it("aceita a URL da API e tira a barra final", () => {
+    expect(parseEnv({ VITE_API_URL: "https://api.exemplo.com/api/" })).toEqual({
+      apiUrl: "https://api.exemplo.com/api",
+    });
   });
 
   it("falha citando o nome da variável que falta", () => {
-    expect(() => parseEnv({ VITE_API_URL: "https://api.exemplo.com/api" })).toThrow(
-      /VITE_DEVICE_ID/,
-    );
-    expect(() => parseEnv({ VITE_DEVICE_ID: "g1" })).toThrow(EnvError);
+    expect(() => parseEnv({})).toThrow(/VITE_API_URL/);
+    expect(() => parseEnv({})).toThrow(EnvError);
   });
 
   it("falha com URL inválida sem revelar o valor", () => {
     try {
-      parseEnv({ VITE_API_URL: "valor-ruim", VITE_DEVICE_ID: "g1" });
+      parseEnv({ VITE_API_URL: "valor-ruim" });
       expect.unreachable();
     } catch (err) {
       expect((err as Error).message).toContain("VITE_API_URL");
@@ -28,9 +26,8 @@ describe("parseEnv", () => {
 });
 
 describe("env do ambiente de teste", () => {
-  it("expõe apiUrl e deviceId e checkEnv não acusa problemas", () => {
+  it("expõe a apiUrl e checkEnv não acusa problemas", () => {
     expect(env.apiUrl).toBe("http://localhost:3333/api");
-    expect(env.deviceId).toBe("galinheiro-teste");
     expect(checkEnv()).toBeNull();
   });
 });

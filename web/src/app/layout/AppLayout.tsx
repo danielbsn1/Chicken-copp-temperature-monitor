@@ -2,6 +2,7 @@ import * as Collapsible from "@radix-ui/react-collapsible";
 import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useSearchParams } from "react-router";
 import { useLogout } from "../../modules/auth";
+import { DeviceSelect } from "../../modules/devices";
 import { EVENT_TYPES, eventLabel } from "../../modules/events";
 import { ThemeToggle } from "../../shared/theme";
 import { Button } from "../../shared/ui";
@@ -56,6 +57,7 @@ export function AppLayout() {
         </button>
         <span className={styles.brand}>Avitech</span>
         <span className={styles.spacer} />
+        <DeviceSelect />
         <ThemeToggle />
         <Button
           variant="secondary"
@@ -109,6 +111,15 @@ export function AppLayout() {
             <li>
               <NavLink className={styles.link} to="/relatorios" onClick={closeMenu}>
                 Relatórios
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                className={styles.link}
+                to="/equipamentos/novo"
+                onClick={closeMenu}
+              >
+                Adicionar equipamento
               </NavLink>
             </li>
           </ul>

@@ -81,6 +81,7 @@ describe("rotas", () => {
       "Dispositivo reiniciado",
       "Conexão restabelecida",
       "Relatórios",
+      "Adicionar equipamento",
     ]);
     await user.click(within(nav).getByRole("link", { name: "Falha no sensor" }));
     expect(

@@ -44,6 +44,16 @@ export function loginErrorMessage(error: unknown): string {
   return "Não foi possível entrar. Tente de novo.";
 }
 
+/** Abre a sessão sem navegar (usado no cadastro, que depois segue para o painel). */
+export function useStartSession() {
+  const queryClient = useQueryClient();
+  return async (credentials: { email: string; password: string }) => {
+    const session = await postLogin(credentials);
+    queryClient.setQueryData(sessionKey, session);
+    return session;
+  };
+}
+
 /** Entra com e-mail e senha; o cookie httpOnly vem da API e nada é guardado no navegador. */
 export function useLogin() {
   const queryClient = useQueryClient();

@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { useActiveDeviceId } from "../../shared/device";
 import { ApiError } from "../../shared/api/errors";
 import { formatDay, yesterdayInSaoPaulo } from "../../shared/format/date";
 import { formatTemp } from "../../shared/format/number";
@@ -50,6 +51,7 @@ export function ReportsPage() {
 }
 
 function Summary({ summary }: { summary: DailySummary }) {
+  const deviceId = useActiveDeviceId();
   return (
     <>
       <h3 className={styles.heading}>Resumo de {formatDay(summary.day)}</h3>
@@ -75,7 +77,7 @@ function Summary({ summary }: { summary: DailySummary }) {
           <dd className={styles.big}>{summary.readingsCount}</dd>
         </div>
       </dl>
-      <a className={styles.download} href={dailyCsvUrl(summary.day)} download>
+      <a className={styles.download} href={dailyCsvUrl(deviceId, summary.day)} download>
         Baixar CSV
       </a>
     </>
