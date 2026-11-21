@@ -14,6 +14,7 @@ export const availableSchema = z.object({
       serial: z.string(),
       fwVersion: z.string(),
       expiresAt: z.string().nullable(),
+      ticket: z.string().nullable(),
     }),
   ),
 });
@@ -29,6 +30,8 @@ export interface ClaimInput {
   name: string;
   /** true quando o serial foi digitado: vale mesmo fora da mesma rede. */
   manual: boolean;
+  /** Bilhete da consulta: prova a mesma rede quando o IP do vínculo é de outra família. */
+  ticket?: string;
 }
 export interface SignupInput extends ClaimInput {
   email: string;

@@ -6,7 +6,23 @@ describe("parseEnv", () => {
   it("aceita a URL da API e tira a barra final", () => {
     expect(parseEnv({ VITE_API_URL: "https://api.exemplo.com/api/" })).toEqual({
       apiUrl: "https://api.exemplo.com/api",
+      pairingUrl: undefined,
     });
+  });
+
+  it("aceita o endereço IPv4 opcional do pareamento e tira a barra final", () => {
+    expect(
+      parseEnv({
+        VITE_API_URL: "https://api.exemplo.com/api",
+        VITE_PAIRING_URL: "https://v4.exemplo.com/api/",
+      }).pairingUrl,
+    ).toBe("https://v4.exemplo.com/api");
+    expect(
+      parseEnv({ VITE_API_URL: "https://api.exemplo.com/api" }).pairingUrl,
+    ).toBeUndefined();
+    expect(() =>
+      parseEnv({ VITE_API_URL: "https://api.exemplo.com/api", VITE_PAIRING_URL: "ruim" }),
+    ).toThrow(/VITE_PAIRING_URL/);
   });
 
   it("falha citando o nome da variável que falta", () => {

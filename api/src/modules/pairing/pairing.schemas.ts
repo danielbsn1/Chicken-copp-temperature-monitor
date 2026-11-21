@@ -20,6 +20,8 @@ export const claimBody = z.object({
   serial,
   name,
   manual: z.boolean().default(false),
+  /** Bilhete devolvido pela consulta de equipamentos (prova a mesma rede). */
+  ticket: z.string().max(100).optional(),
 });
 
 /** Cadastro de conta nova junto com o vínculo do primeiro equipamento. */

@@ -26,14 +26,26 @@ const device = (id: string, name: string) => ({
   fwVersion: null,
 });
 const found = (serial = "AVT-0001-XYZ") => ({
-  devices: [{ serial, fwVersion: "2.0.1", expiresAt: "2026-11-21T12:05:00.000Z" }],
+  devices: [
+    {
+      serial,
+      fwVersion: "2.0.1",
+      expiresAt: "2026-11-21T12:05:00.000Z",
+      ticket: "123.tkt",
+    },
+  ],
 });
 
 function devices(list: ReturnType<typeof device>[]) {
   server.use(http.get(`${API}/devices`, () => HttpResponse.json({ devices: list })));
 }
 function available(body: {
-  devices: { serial: string; fwVersion: string; expiresAt: string | null }[];
+  devices: {
+    serial: string;
+    fwVersion: string;
+    expiresAt: string | null;
+    ticket: string | null;
+  }[];
 }) {
   server.use(http.get(`${API}/pairing/available`, () => HttpResponse.json(body)));
 }
@@ -141,7 +153,12 @@ describe("Adicionar equipamento (logado)", () => {
     await user.type(screen.getByLabelText("Nome do galinheiro"), "Novo");
     await user.click(screen.getByRole("button", { name: "Vincular equipamento" }));
     await waitFor(() =>
-      expect(body).toEqual({ serial: "AVT-0001-XYZ", name: "Novo", manual: false }),
+      expect(body).toEqual({
+        serial: "AVT-0001-XYZ",
+        name: "Novo",
+        manual: false,
+        ticket: "123.tkt",
+      }),
     );
     expect(await screen.findByRole("heading", { name: "Painel" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Galinheiro" })).toHaveValue("novo-ab12");
@@ -188,8 +205,8 @@ describe("Adicionar equipamento (logado)", () => {
     const user = userEvent.setup();
     available({
       devices: [
-        { serial: "AVT-0001-AAA", fwVersion: "2.0.1", expiresAt: null },
-        { serial: "AVT-0002-BBB", fwVersion: "2.0.1", expiresAt: null },
+        { serial: "AVT-0001-AAA", fwVersion: "2.0.1", expiresAt: null, ticket: null },
+        { serial: "AVT-0002-BBB", fwVersion: "2.0.1", expiresAt: null, ticket: null },
       ],
     });
     renderApp("/equipamentos/novo");
@@ -254,6 +271,7 @@ describe("Primeiro acesso (/cadastro)", () => {
       manual: false,
       email: "ana@example.com",
       password: "senha-bem-longa-1",
+      ticket: "123.tkt",
     });
   });
 

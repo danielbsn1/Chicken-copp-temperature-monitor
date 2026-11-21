@@ -9,6 +9,8 @@ export interface HttpOptions {
   body?: unknown;
   query?: Record<string, string | number | undefined>;
   signal?: AbortSignal;
+  /** Servidor alternativo (sem cookie de sessão); o padrão é a API do painel. */
+  baseUrl?: string;
   /** Só para testes; o padrão é 15 s. */
   timeoutMs?: number;
 }
@@ -29,8 +31,8 @@ const errorBodySchema = z.object({
   }),
 });
 
-function buildUrl(path: string, query: HttpOptions["query"]): string {
-  const url = new URL(`${env.apiUrl}${path}`);
+function buildUrl(path: string, query: HttpOptions["query"], baseUrl?: string): string {
+  const url = new URL(`${baseUrl ?? env.apiUrl}${path}`);
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
@@ -48,9 +50,10 @@ export async function http<T>(
 
   let response: Response;
   try {
-    response = await fetch(buildUrl(path, options.query), {
+    response = await fetch(buildUrl(path, options.query, options.baseUrl), {
       method: options.method ?? "GET",
-      credentials: "include",
+      // Outro servidor não recebe o cookie de sessão.
+      credentials: options.baseUrl ? "omit" : "include",
       headers:
         options.body === undefined ? undefined : { "Content-Type": "application/json" },
       body: options.body === undefined ? undefined : JSON.stringify(options.body),

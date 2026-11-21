@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { AppError, ConflictError, NotFoundError } from "../../core/errors.js";
+import { signTicket, verifyTicket } from "../../core/ticket.js";
 import { signUp } from "../auth/index.js";
 import { createPairedDevice, hashKey } from "../devices/index.js";
 import * as repository from "./pairing.repository.js";
@@ -75,23 +76,31 @@ export async function available(ip: string, now = new Date()) {
     serial: row.serial,
     fwVersion: row.fwVersion,
     expiresAt: row.pairingUntil?.toISOString() ?? null,
+    // Prova a mesma rede para o vínculo (vale quando o IP do vínculo não bate com o do anúncio).
+    ticket: row.pairingUntil ? signTicket(row.serial, row.pairingUntil.getTime()) : null,
   }));
 }
 
 type Announcement = NonNullable<Awaited<ReturnType<typeof repository.find>>>;
 
-/** O equipamento existe, está sem dono, com o botão apertado e (se não for manual) na mesma rede. */
+/**
+ * O equipamento existe, está sem dono, com o botão apertado e, se não for manual, na mesma
+ * rede: pelo IP do vínculo ou pelo bilhete que a consulta devolveu.
+ */
 async function assertClaimable(
   serial: string,
   ip: string,
   manual: boolean,
+  ticket: string | undefined,
   now: Date,
 ): Promise<Announcement> {
   const announcement = await repository.find(serial);
   if (!announcement || announcement.claimedDeviceId) {
     throw new NotFoundError("Equipamento não encontrado");
   }
-  if (!manual && announcement.ip !== ipGroup(ip)) {
+  const sameNetwork =
+    announcement.ip === ipGroup(ip) || (!!ticket && verifyTicket(serial, ticket, now));
+  if (!manual && !sameNetwork) {
     // Mesma resposta de um equipamento que não existe: não revela o de outra rede.
     throw new NotFoundError("Equipamento não encontrado");
   }
@@ -149,7 +158,13 @@ export async function claim(
   body: ClaimBody,
   now = new Date(),
 ) {
-  const announcement = await assertClaimable(body.serial, ip, body.manual, now);
+  const announcement = await assertClaimable(
+    body.serial,
+    ip,
+    body.manual,
+    body.ticket,
+    now,
+  );
   return createFor(userId, announcement, body.name);
 }
 
@@ -158,7 +173,13 @@ export async function claim(
  * de criar a conta, para não deixar conta sem equipamento por um pareamento que não vale.
  */
 export async function signupAndClaim(ip: string, body: SignupBody, now = new Date()) {
-  const announcement = await assertClaimable(body.serial, ip, body.manual, now);
+  const announcement = await assertClaimable(
+    body.serial,
+    ip,
+    body.manual,
+    body.ticket,
+    now,
+  );
   const user = await signUp(body.email, body.password);
   return createFor(user.id, announcement, body.name);
 }
