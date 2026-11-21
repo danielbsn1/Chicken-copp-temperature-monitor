@@ -12,9 +12,8 @@
 #include "pairing_logic.h"
 #include "secrets.h"
 
-// Certificados raiz embutidos no framework: a chave do aparelho trafega no anúncio, então a
-// conexão precisa ser verificada (nunca setInsecure).
-extern const uint8_t rootca_crt_bundle_start[] asm("_binary_data_cert_x509_crt_bundle_bin_start");
+// A chave do aparelho trafega no anúncio, então a conexão precisa ser verificada contra o
+// certificado raiz da API (API_ROOT_CA no secrets.h), nunca com setInsecure.
 
 namespace pairing {
 
@@ -34,6 +33,7 @@ char deviceId[65];
 char url[160];
 bool hasOwner = false;
 bool urlOk = false;
+bool caMissing = false;
 
 void newKey() {
   uint8_t raw[32];
@@ -74,7 +74,7 @@ bool announce(bool button, Reply& reply) {
   }
 
   WiFiClientSecure client;
-  client.setCACertBundle(rootca_crt_bundle_start);
+  client.setCACert(API_ROOT_CA);
   HTTPClient http;
   http.setTimeout(HTTP_TIMEOUT_MS);
   if (!http.begin(client, url)) return false;
@@ -112,9 +112,11 @@ void begin() {
   makeSerial(mac, serial);
   loadOrCreate();
   urlOk = announceUrl(API_URL, url, sizeof(url));
+  caMissing = strlen(API_ROOT_CA) == 0;
   Serial.printf("[pairing] serial: %s (%s)\n", serial,
                 hasOwner ? "com dono" : "aguardando dono: aperte o botão BOOT");
   if (!urlOk) Serial.println("[pairing] API_URL precisa terminar em /ingest");
+  if (caMissing) Serial.println("[pairing] API_ROOT_CA vazio no secrets.h: sem ele não há anúncio");
 }
 
 void loop() {
@@ -126,7 +128,7 @@ void loop() {
     Serial.println("[pairing] botão apertado");
   }
 
-  if (hasOwner || !urlOk || WiFi.status() != WL_CONNECTED || !announcer.due(now)) return;
+  if (hasOwner || !urlOk || caMissing || WiFi.status() != WL_CONNECTED || !announcer.due(now)) return;
 
   Reply reply;
   bool button = announcer.buttonPending();

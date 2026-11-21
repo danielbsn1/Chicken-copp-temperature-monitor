@@ -1,17 +1,13 @@
-// Testes no PC (pio test -e native). Sem framework: cada CHECK que falha sai com erro.
-#include <stdio.h>
+// Testes no PC com Unity: pio test -e native
 #include <string.h>
+#include <unity.h>
 
 #include "pairing_logic.h"
 
-static int failures = 0;
-#define CHECK(cond)                                                    \
-  do {                                                                 \
-    if (!(cond)) {                                                     \
-      printf("FALHOU %s:%d  %s\n", __FILE__, __LINE__, #cond);         \
-      failures++;                                                      \
-    }                                                                  \
-  } while (0)
+#define CHECK(cond) TEST_ASSERT_TRUE(cond)
+
+void setUp() {}
+void tearDown() {}
 
 using namespace pairing;
 
@@ -147,17 +143,13 @@ static void test_hold() {
 }
 
 int main() {
-  test_serial_e_hex();
-  test_validacoes();
-  test_corpo();
-  test_url();
-  test_announcer();
-  test_volta_do_contador();
-  test_hold();
-  if (failures) {
-    printf("%d verificação(ões) falharam\n", failures);
-    return 1;
-  }
-  printf("pairing_logic: tudo certo\n");
-  return 0;
+  UNITY_BEGIN();
+  RUN_TEST(test_serial_e_hex);
+  RUN_TEST(test_validacoes);
+  RUN_TEST(test_corpo);
+  RUN_TEST(test_url);
+  RUN_TEST(test_announcer);
+  RUN_TEST(test_volta_do_contador);
+  RUN_TEST(test_hold);
+  return UNITY_END();
 }
