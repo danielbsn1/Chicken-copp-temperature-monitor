@@ -1,5 +1,10 @@
 import { randomBytes } from "node:crypto";
-import { RateLimitError, UnauthorizedError, ValidationError } from "../../core/errors.js";
+import {
+  ConflictError,
+  RateLimitError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../core/errors.js";
 import * as repository from "./auth.repository.js";
 import { registerInput, type AuthUser } from "./auth.schemas.js";
 import { hashPassword, verifyPassword } from "./password.js";
@@ -70,4 +75,24 @@ export async function registerUser(email: string, password: string) {
 /** Limpeza do job diário: apaga as tentativas de login anteriores a `before`. */
 export function purgeLoginAttempts(before: Date): Promise<number> {
   return repository.deleteAttemptsBefore(before);
+}
+
+/**
+ * Cria uma conta nova (cadastro pelo pareamento). Diferente de `registerUser`, nunca troca a
+ * senha de um e-mail que já existe: responde 409.
+ */
+export async function signUp(email: string, password: string): Promise<AuthUser> {
+  const parsed = registerInput.safeParse({ email, password });
+  if (!parsed.success) {
+    throw new ValidationError(
+      "Entrada inválida",
+      parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+    );
+  }
+  const user = await repository.createUser(
+    parsed.data.email,
+    await hashPassword(parsed.data.password),
+  );
+  if (!user) throw new ConflictError("E-mail já cadastrado");
+  return { id: user.id, email: user.email };
 }

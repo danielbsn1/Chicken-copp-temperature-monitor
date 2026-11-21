@@ -7,3 +7,6 @@ export const deviceId = z
 
 /** Instante em ISO 8601 UTC (termina em Z); chega como texto e sai como Date. */
 export const utcInstant = z.iso.datetime().transform((value) => new Date(value));
+
+/** E-mail normalizado (sem espaços, em minúsculas). */
+export const email = z.string().trim().toLowerCase().pipe(z.email());

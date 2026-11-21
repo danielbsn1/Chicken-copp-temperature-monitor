@@ -55,7 +55,12 @@ module.exports = {
       severity: "error",
       from: {
         path: "^src/",
-        pathNot: ["\\.repository\\.ts$", "^src/core/db\\.ts$", "\\.test\\.ts$"],
+        pathNot: [
+          "\\.repository\\.ts$",
+          "^src/core/db\\.ts$",
+          "\\.test\\.ts$",
+          "\\.test-helper\\.ts$",
+        ],
       },
       to: {
         path: [

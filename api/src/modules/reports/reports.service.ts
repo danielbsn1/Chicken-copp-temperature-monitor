@@ -1,6 +1,7 @@
 import { NotFoundError } from "../../core/errors.js";
 import { logger } from "../../core/logger.js";
 import { purgeLoginAttempts } from "../auth/index.js";
+import { purgeAnnouncements } from "../pairing/index.js";
 import { listDevices } from "../devices/index.js";
 import { formatDailySummary, sendTelegram } from "../notifications/index.js";
 import { dayStats, purgeBefore } from "../readings/index.js";
@@ -160,6 +161,8 @@ export async function runDailyReport(now: Date = new Date()): Promise<JobResult>
   readingsBefore.setUTCMonth(readingsBefore.getUTCMonth() - READINGS_MONTHS);
   const purged = {
     loginAttempts: await purgeLoginAttempts(attemptsBefore),
+    // Anúncio de equipamento que não aparece há mais de 1 dia some (o ESP32 anuncia de novo).
+    pairingAnnouncements: await purgeAnnouncements(new Date(now.getTime() - DAY_MS)),
     readings: await purgeBefore(readingsBefore),
   };
 
