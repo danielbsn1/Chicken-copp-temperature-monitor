@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router";
 import logoClaro from "../../shared/assets/logo-avitech-texto-claro.png";
 import logo from "../../shared/assets/logo-avitech-texto.png";
 import { ThemeToggle } from "../../shared/theme";
@@ -66,6 +67,9 @@ export function LoginPage() {
               {login.isPending ? "Entrando…" : "Entrar"}
             </Button>
           </form>
+          <p className={styles.signup}>
+            Primeiro acesso? <Link to="/cadastro">Cadastre seu equipamento</Link>
+          </p>
         </div>
       </main>
       <div className={styles.art} aria-hidden="true">

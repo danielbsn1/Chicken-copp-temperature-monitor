@@ -100,3 +100,11 @@
 .waveWhite {
   fill: var(--color-surface);
 }
+.signup {
+  margin: var(--space-2) 0 0;
+  color: var(--color-muted);
+  text-align: center;
+}
+.signup a {
+  color: var(--color-primary);
+}

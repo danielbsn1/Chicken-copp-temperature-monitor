@@ -89,7 +89,9 @@ describe("StatusCard", () => {
   it("atualiza a cada 60 s", async () => {
     const { client } = renderWithProviders(<StatusCard />);
     await screen.findByText("27,4 °C");
-    const observer = client.getQueryCache().find({ queryKey: ["status"] })?.observers[0];
+    const observer = client
+      .getQueryCache()
+      .find({ queryKey: ["status", "galinheiro-teste"], exact: false })?.observers[0];
     expect(observer?.options.refetchInterval).toBe(60_000);
   });
 });

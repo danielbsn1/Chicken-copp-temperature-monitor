@@ -1,4 +1,3 @@
-import { env } from "../../config/env";
 import { http } from "../../shared/api/http";
 import { eventsSchema, type EventsResponse } from "./events.schemas";
 
@@ -10,6 +9,7 @@ export interface EventRange {
 
 /** Do mais novo para o mais antigo; `type` e o intervalo são opcionais e `limit` vai até 200. */
 export function getEvents(
+  deviceId: string,
   type: string | undefined,
   limit: number,
   range: EventRange,
@@ -18,7 +18,7 @@ export function getEvents(
   return http(
     "/events",
     {
-      query: { deviceId: env.deviceId, type, limit, from: range.from, to: range.to },
+      query: { deviceId, type, limit, from: range.from, to: range.to },
       signal,
     },
     eventsSchema,

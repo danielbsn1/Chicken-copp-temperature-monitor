@@ -101,7 +101,6 @@ jobs:
         run: pnpm build
         env:
           VITE_API_URL: http://localhost:3333/api
-          VITE_DEVICE_ID: galinheiro-1
 
   ci:
     name: ci
