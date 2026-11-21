@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatDateTime, formatDayMonth, formatTime } from "../../shared/format/date";
+import { formatTemp } from "../../shared/format/number";
 import { Card, ErrorState, Spinner } from "../../shared/ui";
 import { TemperatureChart, type TemperaturePoint } from "./components/TemperatureChart";
 import { DEFAULT_PERIOD, PERIODS, periodById, type PeriodId } from "./readings.periods";
@@ -47,7 +48,34 @@ export function ReadingsChart() {
           onRetry={() => void query.refetch()}
         />
       ) : null}
+      {query.data && query.data.points.length > 0 ? (
+        <Summary series={query.data} />
+      ) : null}
       {query.data ? <TemperatureChart points={toPoints(query.data, period)} /> : null}
     </Card>
+  );
+}
+
+/** Mínima, média e máxima do período, para ler sem passar o mouse no gráfico. */
+function Summary({ series }: { series: Series }) {
+  const { points } = series;
+  const min = Math.min(...points.map((p) => p.minC));
+  const max = Math.max(...points.map((p) => p.maxC));
+  const avg = points.reduce((sum, p) => sum + p.avgC, 0) / points.length;
+  return (
+    <dl className={styles.summary}>
+      <div>
+        <dt>Mínima no período</dt>
+        <dd>{formatTemp(min)}</dd>
+      </div>
+      <div>
+        <dt>Média no período</dt>
+        <dd>{formatTemp(avg)}</dd>
+      </div>
+      <div>
+        <dt>Máxima no período</dt>
+        <dd>{formatTemp(max)}</dd>
+      </div>
+    </dl>
   );
 }

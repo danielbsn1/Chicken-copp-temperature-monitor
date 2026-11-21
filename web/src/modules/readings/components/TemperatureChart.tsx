@@ -42,8 +42,8 @@ export function TemperatureChart({ points }: TemperatureChartProps) {
     >
       <ResponsiveContainer
         width="100%"
-        height={280}
-        initialDimension={{ width: 640, height: 280 }}
+        height={380}
+        initialDimension={{ width: 640, height: 380 }}
       >
         <LineChart data={points} accessibilityLayer={false}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
