@@ -52,13 +52,14 @@ const stats = {
   readingsCount: 1380,
 };
 
-async function load(dayStats: unknown) {
+async function load(dayStats: unknown, row: unknown = null) {
   const upsert = vi.fn(async () => undefined);
+  const find = vi.fn(async () => row);
   vi.resetModules();
   vi.doMock("../readings/index.js", () => ({ dayStats }));
-  vi.doMock("./reports.repository.js", () => ({ upsert }));
+  vi.doMock("./reports.repository.js", () => ({ upsert, find }));
   const service = await import("./reports.service.js");
-  return { service, upsert };
+  return { service, upsert, find };
 }
 
 describe("calculateDailySummary", () => {
@@ -104,12 +105,61 @@ describe("calculateDailySummary", () => {
   });
 });
 
+const stored = {
+  tempMinC: 22.120000839233398, // float4 do banco
+  tempMaxC: 33.99,
+  tempAvgC: 27.46,
+  fanOnMinutes: 90,
+  readingsCount: 1380,
+};
+
+describe("dailySummary (lê o resumo já gravado)", () => {
+  it("devolve o resumo gravado, sem recalcular, e limpa o ruído do float4", async () => {
+    const { service, find, upsert } = await load(vi.fn(), stored);
+    const result = await service.dailySummary({ deviceId: "g", day: "2026-11-14" });
+    expect(find).toHaveBeenCalledWith("g", new Date("2026-11-14T00:00:00Z"));
+    expect(upsert).not.toHaveBeenCalled();
+    expect(result.tempMinC).toBe(22.12);
+    expect(result).toMatchObject({
+      deviceId: "g",
+      day: "2026-11-14",
+      readingsCount: 1380,
+    });
+  });
+
+  it("sem resumo gravado lança 404", async () => {
+    const { service } = await load(vi.fn(), null);
+    await expect(
+      service.dailySummary({ deviceId: "g", day: "2026-11-14" }),
+    ).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
+  });
+});
+
+describe("summaryToCsv", () => {
+  it("tem BOM, cabeçalho com unidades e uma linha de dados, com CRLF", async () => {
+    const { service } = await load(vi.fn());
+    const csv = service.summaryToCsv({
+      deviceId: "g",
+      day: "2026-11-14",
+      tempMinC: 22.12,
+      tempMaxC: 33.99,
+      tempAvgC: 27.46,
+      fanOnMinutes: 90,
+      readingsCount: 1380,
+    });
+    expect(csv).toBe(
+      "\uFEFFDia,Temperatura mínima (°C),Temperatura máxima (°C),Temperatura média (°C),Ventilador ligado (min),Leituras\r\n" +
+        "2026-11-14,22.12,33.99,27.46,90,1380\r\n",
+    );
+  });
+});
+
 describe("GET /api/reports/daily", () => {
   const url = "/api/reports/daily?deviceId=g&day=2026-11-14";
   const cookie = `session=${signSession("u-1")}`;
 
-  async function app(dayStats: unknown) {
-    await load(dayStats);
+  async function app(row: unknown) {
+    await load(vi.fn(), row);
     const { reportsRouter } = await import("./index.js");
     const { errorHandler } = await import("../../core/http/error-handler.js");
     const server = express();
@@ -119,20 +169,24 @@ describe("GET /api/reports/daily", () => {
   }
 
   it("exige sessão", async () => {
-    const res = await request(await app(vi.fn(async () => stats))).get(url);
+    const res = await request(await app(stored)).get(url);
     expect(res.status).toBe(401);
   });
 
-  it("dia inválido responde 400 no formato padrão", async () => {
-    const res = await request(await app(vi.fn()))
-      .get("/api/reports/daily?deviceId=g&day=2026-02-30")
+  it.each([
+    ["dia inexistente", "day=2026-02-30"],
+    ["format desconhecido", "day=2026-11-14&format=xml"],
+  ])("%s responde 400 no formato padrão", async (_nome, query) => {
+    const res = await request(await app(stored))
+      .get(`/api/reports/daily?deviceId=g&${query}`)
       .set("Cookie", cookie);
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res.body.error.details.length).toBeGreaterThan(0);
   });
 
-  it("responde 200 com o resumo", async () => {
-    const res = await request(await app(vi.fn(async () => stats)))
+  it("responde 200 JSON com o resumo (formato padrão)", async () => {
+    const res = await request(await app(stored))
       .get(url)
       .set("Cookie", cookie);
     expect(res.status).toBe(200);
@@ -147,11 +201,26 @@ describe("GET /api/reports/daily", () => {
     });
   });
 
-  it("dia sem leituras responde 404 NOT_FOUND", async () => {
-    const res = await request(await app(vi.fn(async () => null)))
-      .get(url)
+  it("format=csv baixa o arquivo com tipo, nome e cabeçalho", async () => {
+    const res = await request(await app(stored))
+      .get(`${url}&format=csv`)
       .set("Cookie", cookie);
-    expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe("NOT_FOUND");
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toBe("text/csv; charset=utf-8");
+    expect(res.headers["content-disposition"]).toContain(
+      "attachment; filename=resumo-g-2026-11-14.csv",
+    );
+    expect(res.text).toContain("Temperatura mínima (°C)");
+    expect(res.text).toContain("2026-11-14,22.12,33.99,27.46,90,1380");
+  });
+
+  it("sem resumo gravado responde 404 NOT_FOUND (json e csv)", async () => {
+    for (const q of ["", "&format=csv"]) {
+      const res = await request(await app(null))
+        .get(`${url}${q}`)
+        .set("Cookie", cookie);
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe("NOT_FOUND");
+    }
   });
 });
