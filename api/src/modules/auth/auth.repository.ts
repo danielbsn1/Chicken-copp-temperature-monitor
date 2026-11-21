@@ -36,3 +36,10 @@ export async function deleteAttemptsBefore(before: Date): Promise<number> {
   const result = await db.loginAttempt.deleteMany({ where: { at: { lt: before } } });
   return result.count;
 }
+
+/** Cria o usuário; devolve null se o e-mail já existe (nunca troca a senha de quem já existe). */
+export async function createUser(email: string, passwordHash: string) {
+  const existing = await db.user.findUnique({ where: { email } });
+  if (existing) return null;
+  return db.user.create({ data: { email, passwordHash } });
+}

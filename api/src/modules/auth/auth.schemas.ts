@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-const email = z.string().trim().toLowerCase().pipe(z.email());
+import { email } from "../../core/schemas.js";
 
 export const loginBody = z.object({
   email,

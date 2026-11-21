@@ -27,12 +27,41 @@ export async function authenticate(key: string): Promise<{ id: string } | null> 
   return found === null ? null : { id: found };
 }
 
-/** Cadastra o dispositivo ou troca a chave dele; a chave em claro só volta aqui. */
-export async function registerDevice(id: string, name: string) {
+/**
+ * Cadastra o dispositivo ou troca a chave dele; a chave em claro só volta aqui.
+ * `ownerId` é o usuário que passa a ser dono (opcional; sem ele o dono atual continua).
+ */
+export async function registerDevice(id: string, name: string, ownerId?: string) {
   const exists = (await repository.findById(id)) !== null;
   const key = generateKey();
-  await repository.save(id, name, hashKey(key));
+  await repository.save(id, name, hashKey(key), ownerId);
   return { created: !exists, key };
+}
+
+/** Equipamentos do usuário, para o seletor do painel. */
+export async function listOwnedDevices(userId: string) {
+  const rows = await repository.listByOwner(userId);
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    lastSeenAt: row.lastSeenAt,
+    fwVersion: row.fwVersion,
+  }));
+}
+
+/** O usuário é o dono do equipamento? */
+export function ownsDevice(userId: string, deviceId: string): Promise<boolean> {
+  return repository.isOwnedBy(deviceId, userId);
+}
+
+/** Cria um equipamento pareado: dono e chave (hash) já definidos; falha se o id já existe. */
+export async function createPairedDevice(
+  input: { id: string; name: string; keyHash: string; ownerId: string },
+  tx?: repository.Tx,
+): Promise<boolean> {
+  if ((await repository.existsById(input.id, tx)) > 0) return false;
+  await repository.createOwned(input, tx);
+  return true;
 }
 
 export function touch(

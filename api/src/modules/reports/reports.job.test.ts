@@ -31,6 +31,7 @@ async function load({
     markSent: vi.fn(async () => undefined),
     sendTelegram: vi.fn((_text: string) => send()),
     purgeLoginAttempts: vi.fn(async () => 3),
+    purgeAnnouncements: vi.fn(async () => 2),
     purgeBefore: vi.fn(async () => 5),
     info: vi.fn(),
     warn: vi.fn(),
@@ -49,6 +50,9 @@ async function load({
     listDevices: async () => [{ id: "g", name: "Galinheiro" }],
   }));
   vi.doMock("../auth/index.js", () => ({ purgeLoginAttempts: mocks.purgeLoginAttempts }));
+  vi.doMock("../pairing/index.js", () => ({
+    purgeAnnouncements: mocks.purgeAnnouncements,
+  }));
   vi.doMock("../notifications/index.js", async () => ({
     ...(await vi.importActual<object>("../notifications/index.js")),
     sendTelegram: mocks.sendTelegram,
@@ -160,7 +164,11 @@ describe("runDailyReport", () => {
     const result = await m.service.runDailyReport(NOW);
     expect(m.purgeLoginAttempts).toHaveBeenCalledWith(new Date("2026-11-08T10:00:00Z"));
     expect(m.purgeBefore).toHaveBeenCalledWith(new Date("2025-11-15T10:00:00Z"));
-    expect(result.purged).toEqual({ loginAttempts: 3, readings: 5 });
+    expect(result.purged).toEqual({
+      loginAttempts: 3,
+      pairingAnnouncements: 2,
+      readings: 5,
+    });
   });
 
   it("o log não leva segredo", async () => {
@@ -209,7 +217,11 @@ describe("GET /api/jobs/daily-report", () => {
       .set("Authorization", `Bearer ${SECRET}`);
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ summaries: 1, sent: 0, failed: 0 });
-    expect(res.body.purged).toEqual({ loginAttempts: 3, readings: 5 });
+    expect(res.body.purged).toEqual({
+      loginAttempts: 3,
+      pairingAnnouncements: 2,
+      readings: 5,
+    });
   });
 });
 

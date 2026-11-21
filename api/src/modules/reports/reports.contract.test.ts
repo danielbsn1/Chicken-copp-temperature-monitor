@@ -2,9 +2,9 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../app.js";
 import { db } from "../../core/db.js";
-import { signSession } from "../../core/session.js";
 import { calculateDailySummary } from "./reports.service.js";
 import { isDatabaseReady } from "../../test-utils/db-ready.js";
+import { removeTestUser, testUser } from "../../test-utils/owner.test-helper.js";
 
 // Contrato do GET /api/reports/daily contra um Postgres real, com dados sintéticos.
 const dbReady = await isDatabaseReady(() => db.device.count());
@@ -17,7 +17,9 @@ const at = (minutes: number) => new Date(DIA_INICIO + minutes * 60_000);
 
 describe.skipIf(!dbReady)("GET /api/reports/daily (Postgres real)", () => {
   const app = createApp();
-  const cookie = `session=${signSession("u-contrato")}`;
+  const EMAIL = "contrato-reports@example.com";
+  let cookie = "";
+  let ownerId = "";
   const get = (day: string, deviceId = ID, extra = "") =>
     request(app)
       .get(`/api/reports/daily?deviceId=${deviceId}&day=${day}${extra}`)
@@ -37,10 +39,13 @@ describe.skipIf(!dbReady)("GET /api/reports/daily (Postgres real)", () => {
 
   beforeAll(async () => {
     await clean();
+    const owner = await testUser(EMAIL);
+    cookie = owner.cookie;
+    ownerId = owner.id;
     await db.device.createMany({
       data: [
-        { id: ID, name: "Contrato reports", keyHash: "x" },
-        { id: ID_OUTRO, name: "Outro", keyHash: "y" },
+        { id: ID, name: "Contrato reports", keyHash: "x", ownerId },
+        { id: ID_OUTRO, name: "Outro", keyHash: "y", ownerId },
       ],
     });
     const row = (deviceId: string, minutes: number, tempC: number, fanOn = false) => ({
@@ -67,6 +72,7 @@ describe.skipIf(!dbReady)("GET /api/reports/daily (Postgres real)", () => {
   });
   afterAll(async () => {
     await clean();
+    await removeTestUser(EMAIL);
     await db.$disconnect();
   });
 

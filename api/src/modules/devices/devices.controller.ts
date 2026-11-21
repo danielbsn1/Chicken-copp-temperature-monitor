@@ -5,3 +5,7 @@ export const status: RequestHandler = async (req, res) => {
   const { deviceId } = req.query as { deviceId: string };
   res.json(await service.getStatus(deviceId));
 };
+
+export const list: RequestHandler = async (_req, res) => {
+  res.json({ devices: await service.listOwnedDevices(res.locals.userId as string) });
+};

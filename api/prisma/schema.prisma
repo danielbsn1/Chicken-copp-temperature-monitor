@@ -13,11 +13,15 @@ model Device {
   keyHash    String    @map("key_hash")
   lastSeenAt DateTime? @map("last_seen_at") @db.Timestamptz(3)
   fwVersion  String?   @map("fw_version")
+  ownerId    String?   @map("owner_id") @db.Uuid
 
+  owner     User?                 @relation(fields: [ownerId], references: [id])
   readings  Reading[]
   events    Event[]
   summaries DailySummary[]
+  pairings  PairingAnnouncement[]
 
+  @@index([ownerId])
   @@map("devices")
 }
 
@@ -67,6 +71,8 @@ model User {
   email        String @unique
   passwordHash String @map("password_hash")
 
+  devices Device[]
+
   @@map("users")
 }
 
@@ -86,4 +92,21 @@ model PoolerProbe {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   @@map("pooler_probe")
+}
+
+/// Equipamento novo que se anunciou e espera um dono (pareamento).
+model PairingAnnouncement {
+  serial          String    @id
+  keyHash         String    @map("key_hash")
+  fwVersion       String    @map("fw_version")
+  ip              String
+  announcedAt     DateTime  @default(now()) @map("announced_at") @db.Timestamptz(3)
+  pairingUntil    DateTime? @map("pairing_until") @db.Timestamptz(3)
+  claimedDeviceId String?   @map("claimed_device_id")
+
+  device Device? @relation(fields: [claimedDeviceId], references: [id])
+
+  @@index([ip])
+  @@index([announcedAt])
+  @@map("pairing_announcements")
 }

@@ -12,3 +12,5 @@ devicesRouter.get(
   validate({ query: statusQuery }),
   controller.status,
 );
+
+devicesRouter.get("/devices", requireUser, controller.list);

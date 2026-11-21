@@ -15,11 +15,17 @@ export function findById(id: string) {
   return db.device.findUnique({ where: { id } });
 }
 
-export async function save(id: string, name: string, keyHash: string): Promise<void> {
+export async function save(
+  id: string,
+  name: string,
+  keyHash: string,
+  ownerId?: string,
+): Promise<void> {
   await db.device.upsert({
     where: { id },
-    create: { id, name, keyHash },
-    update: { name, keyHash },
+    create: { id, name, keyHash, ownerId },
+    // Trocar a chave não tira o dono; só muda se um dono novo for informado.
+    update: { name, keyHash, ...(ownerId ? { ownerId } : {}) },
   });
 }
 
@@ -36,4 +42,30 @@ export async function setFirmware(id: string, fwVersion: string, tx?: Tx): Promi
 
 export function listAll() {
   return db.device.findMany({ select: { id: true, name: true }, orderBy: { id: "asc" } });
+}
+
+/** Equipamentos de um dono, do mais antigo cadastro (por id) ao mais novo. */
+export function listByOwner(ownerId: string) {
+  return db.device.findMany({
+    where: { ownerId },
+    select: { id: true, name: true, lastSeenAt: true, fwVersion: true },
+    orderBy: { id: "asc" },
+  });
+}
+
+export async function isOwnedBy(deviceId: string, ownerId: string): Promise<boolean> {
+  const count = await db.device.count({ where: { id: deviceId, ownerId } });
+  return count > 0;
+}
+
+export function existsById(id: string, tx?: Tx) {
+  return client(tx).device.count({ where: { id } });
+}
+
+/** Cria o equipamento já com dono e com a chave que o próprio equipamento gerou. */
+export async function createOwned(
+  row: { id: string; name: string; keyHash: string; ownerId: string },
+  tx?: Tx,
+): Promise<void> {
+  await client(tx).device.create({ data: row });
 }
