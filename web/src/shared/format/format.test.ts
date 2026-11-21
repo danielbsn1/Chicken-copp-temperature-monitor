@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime, formatTime, toSaoPauloDay } from "./date";
+import { formatDateTime, formatDayMonth, formatTime, toSaoPauloDay } from "./date";
 import { formatPct, formatTemp } from "./number";
 
 describe("date", () => {
@@ -17,6 +17,12 @@ describe("date", () => {
   });
 });
 
+describe("formatDayMonth", () => {
+  it("mostra dia/mês de São Paulo", () => {
+    expect(formatDayMonth("2026-11-14T01:30:00Z")).toBe("13/11");
+  });
+});
+
 describe("number", () => {
   it("formatTemp usa vírgula, uma casa decimal e °C", () => {
     expect(formatTemp(27.4)).toBe("27,4 °C");
@@ -26,5 +32,11 @@ describe("number", () => {
   it("formatPct não tem casas decimais e mostra %", () => {
     expect(formatPct(62)).toBe("62 %");
     expect(formatPct(61.6)).toBe("62 %");
+  });
+
+  it("formatTemp e formatPct tratam zero e negativos", () => {
+    expect(formatTemp(0)).toBe("0,0 °C");
+    expect(formatTemp(-1.25)).toBe("-1,3 °C");
+    expect(formatPct(0)).toBe("0 %");
   });
 });
