@@ -1,7 +1,6 @@
 import { UnauthorizedError } from "../../core/errors.js";
 import * as devices from "../devices/index.js";
 import * as events from "../events/index.js";
-import { pingHealthchecks } from "../health/index.js";
 import * as readings from "../readings/index.js";
 import {
   eventSchema,
@@ -85,8 +84,6 @@ export async function ingestBatch(
     await devices.setFirmware(deviceId, batch.fwVersion, tx);
     return insertedSamples + insertedEvents;
   });
-
-  await pingHealthchecks();
 
   const valid = samples.valid.length + evts.valid.length;
   return {

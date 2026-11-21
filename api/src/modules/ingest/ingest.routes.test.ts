@@ -5,8 +5,10 @@ import { UnauthorizedError } from "../../core/errors.js";
 import { errorHandler } from "../../core/http/error-handler.js";
 
 const ingestBatch = vi.hoisted(() => vi.fn());
+const pingInBackground = vi.hoisted(() => vi.fn());
 
 vi.mock("./ingest.service.js", () => ({ ingestBatch }));
+vi.mock("../health/index.js", () => ({ pingInBackground }));
 vi.mock("../devices/index.js", () => ({
   // Dublê do guarda: a chave "dev-N" autentica o dispositivo "dev-N".
   requireDeviceKey: (
@@ -43,6 +45,7 @@ const body = (over: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
   ingestBatch.mockReset();
+  pingInBackground.mockReset();
   ingestBatch.mockResolvedValue({ accepted: 3, duplicates: 1, rejected: 2 });
   key = `dev-${++n}`;
 });
@@ -134,5 +137,36 @@ describe("limite de 30 requisições por minuto por dispositivo", () => {
       .set("X-Device-Key", `dev-outro-${n}`)
       .send(body());
     expect(outro.status).toBe(200);
+  });
+});
+
+describe("aviso ao Healthchecks", () => {
+  it("lote válido: o ping é disparado uma vez, depois de a resposta ser montada", async () => {
+    const res = await request(app())
+      .post("/api/ingest")
+      .set("X-Device-Key", key)
+      .send(body());
+    expect(res.status).toBe(200);
+    expect(pingInBackground).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ["sem a chave", undefined, body()],
+    ["lote inválido", true, body({ samples: "x" })],
+  ])("%s: não avisa o Healthchecks", async (_nome, withKey, payload) => {
+    const req = request(app()).post("/api/ingest");
+    if (withKey) req.set("X-Device-Key", key);
+    await req.send(payload);
+    expect(pingInBackground).not.toHaveBeenCalled();
+  });
+
+  it("falha na gravação: o erro sobe e o Healthchecks não é avisado", async () => {
+    ingestBatch.mockRejectedValue(new Error("banco caiu"));
+    const res = await request(app())
+      .post("/api/ingest")
+      .set("X-Device-Key", key)
+      .send(body());
+    expect(res.status).toBe(500);
+    expect(pingInBackground).not.toHaveBeenCalled();
   });
 });

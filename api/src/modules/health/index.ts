@@ -1,2 +1,2 @@
 export { healthRouter } from "./health.routes.js";
-export { pingHealthchecks } from "./health.service.js";
+export { pingHealthchecks, pingInBackground } from "./health.service.js";
