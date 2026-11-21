@@ -62,3 +62,8 @@ export async function getStatus(deviceId: string) {
     fwVersion: device.fwVersion,
   };
 }
+
+/** Dispositivos cadastrados (id e nome), para o job diário. */
+export function listDevices() {
+  return repository.listAll();
+}

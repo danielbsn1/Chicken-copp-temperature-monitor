@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireUser } from "../../core/http/guards.js";
+import { requireCronSecret, requireUser } from "../../core/http/guards.js";
 import { validate } from "../../core/http/validate.js";
 import * as controller from "./reports.controller.js";
 import { dailyQuery } from "./reports.schemas.js";
@@ -12,3 +12,6 @@ reportsRouter.get(
   validate({ query: dailyQuery }),
   controller.daily,
 );
+
+/** Único agendador: a Vercel chama às 10:00 UTC com Authorization: Bearer <CRON_SECRET>. */
+reportsRouter.get("/jobs/daily-report", requireCronSecret, controller.dailyJob);

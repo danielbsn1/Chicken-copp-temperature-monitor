@@ -16,3 +16,18 @@ export function upsert(deviceId: string, day: Date, values: DailyValues) {
     update: values,
   });
 }
+
+/** Resumos ainda não enviados ao Telegram, a partir de `since`, do mais antigo ao mais novo. */
+export function findUnsent(since: Date) {
+  return db.dailySummary.findMany({
+    where: { telegramSentAt: null, day: { gte: since } },
+    orderBy: [{ day: "asc" }, { deviceId: "asc" }],
+  });
+}
+
+export async function markSent(deviceId: string, day: Date, at: Date): Promise<void> {
+  await db.dailySummary.update({
+    where: { deviceId_day: { deviceId, day } },
+    data: { telegramSentAt: at },
+  });
+}
