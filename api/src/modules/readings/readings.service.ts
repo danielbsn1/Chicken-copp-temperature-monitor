@@ -37,3 +37,8 @@ export async function temperatureSeries({ deviceId, from, to, bucket }: SeriesQu
     })),
   };
 }
+
+/** Limpeza do job diário: remove as leituras anteriores a `before`. */
+export function purgeBefore(before: Date): Promise<number> {
+  return repository.deleteBefore(before);
+}

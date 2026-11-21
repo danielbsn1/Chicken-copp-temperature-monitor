@@ -95,3 +95,9 @@ export async function dayStats(
   const row = rows[0];
   return row && row.readingsCount > 0 ? row : null;
 }
+
+/** Apaga as leituras anteriores a `before`; devolve quantas saíram. */
+export async function deleteBefore(before: Date): Promise<number> {
+  const result = await db.reading.deleteMany({ where: { ts: { lt: before } } });
+  return result.count;
+}

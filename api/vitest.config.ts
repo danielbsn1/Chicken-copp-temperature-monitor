@@ -3,6 +3,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
+    // Os testes de contrato dividem o mesmo Postgres e o job diário varre todos os dispositivos.
+    fileParallelism: false,
     env: {
       NODE_ENV: "test",
       DATABASE_URL:
