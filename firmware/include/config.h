@@ -25,3 +25,8 @@
 // Rede
 #define SAMPLE_BUFFER_SIZE 360
 #define BATCH_MAX_SAMPLES 50
+
+// Pareamento
+#define FW_VERSION "2.0.1"
+// Botão BOOT da própria placa (GPIO 0, ativo em nível baixo): sem fiação extra.
+#define PIN_PAIR_BUTTON 0
