@@ -30,3 +30,9 @@ export async function addFailure(key: string, at: Date): Promise<void> {
 export async function clearFailures(key: string): Promise<void> {
   await db.loginAttempt.deleteMany({ where: { key } });
 }
+
+/** Apaga as tentativas anteriores a `before`; devolve quantas saíram. */
+export async function deleteAttemptsBefore(before: Date): Promise<number> {
+  const result = await db.loginAttempt.deleteMany({ where: { at: { lt: before } } });
+  return result.count;
+}

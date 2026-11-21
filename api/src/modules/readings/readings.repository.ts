@@ -64,3 +64,40 @@ export function aggregate(
     GROUP BY 1
     ORDER BY 1`);
 }
+
+export interface DayStatsRow {
+  tempMinC: number;
+  tempMaxC: number;
+  tempAvgC: number;
+  fanOnMinutes: number;
+  readingsCount: number;
+}
+
+/**
+ * Estatísticas das leituras do dia `day` (AAAA-MM-DD) em America/Sao_Paulo: de 00:00
+ * inclusive até 00:00 do dia seguinte exclusive. O armazenamento segue em UTC; o fuso
+ * só define os limites. Sem leitura no dia, devolve null.
+ */
+export async function dayStats(
+  deviceId: string,
+  day: string,
+): Promise<DayStatsRow | null> {
+  const rows = await db.$queryRaw<DayStatsRow[]>(Prisma.sql`
+    SELECT MIN(temp_c)::float8 AS "tempMinC",
+           MAX(temp_c)::float8 AS "tempMaxC",
+           AVG(temp_c)::float8 AS "tempAvgC",
+           COUNT(*) FILTER (WHERE fan_on)::int AS "fanOnMinutes",
+           COUNT(*)::int AS "readingsCount"
+    FROM readings
+    WHERE device_id = ${deviceId}
+      AND ts >= (${day}::date)::timestamp AT TIME ZONE 'America/Sao_Paulo'
+      AND ts <  ((${day}::date + 1))::timestamp AT TIME ZONE 'America/Sao_Paulo'`);
+  const row = rows[0];
+  return row && row.readingsCount > 0 ? row : null;
+}
+
+/** Apaga as leituras anteriores a `before`; devolve quantas saíram. */
+export async function deleteBefore(before: Date): Promise<number> {
+  const result = await db.reading.deleteMany({ where: { ts: { lt: before } } });
+  return result.count;
+}

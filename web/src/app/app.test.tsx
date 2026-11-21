@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter } from "react-router";
@@ -33,7 +33,7 @@ function sessionExpired() {
 }
 
 describe("rotas", () => {
-  it("/ mostra o painel com status, gráfico e eventos", async () => {
+  it("/ mostra o painel só com a situação atual e o gráfico, sem eventos", async () => {
     renderApp("/");
     expect(
       await screen.findByRole("heading", { name: "Painel", level: 1 }),
@@ -43,7 +43,56 @@ describe("rotas", () => {
     );
     expect(screen.getByRole("heading", { name: "Situação atual" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Temperatura" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Eventos" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Eventos" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Todos os eventos", { selector: "h2" })).toBeNull();
+  });
+
+  it("/eventos mostra todos os eventos", async () => {
+    renderApp("/eventos");
+    expect(
+      await screen.findByRole("heading", { name: "Eventos", level: 1 }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Todos os eventos" }),
+    ).toBeInTheDocument();
+  });
+
+  it("o menu lateral tem Situação atual, Eventos (com Todos e os 7 tipos) e Relatórios", async () => {
+    const user = userEvent.setup();
+    renderApp("/");
+    const nav = await screen.findByRole("navigation", { name: "Principal" });
+    expect(within(nav).getByRole("link", { name: "Situação atual" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(within(nav).getByRole("link", { name: "Relatórios" })).toBeInTheDocument();
+    await user.click(within(nav).getByRole("button", { name: /Eventos/ }));
+    const links = within(nav)
+      .getAllByRole("link")
+      .map((l) => l.textContent);
+    expect(links).toEqual([
+      "Situação atual",
+      "Todos os eventos",
+      "Ventilador ligado",
+      "Ventilador desligado",
+      "Temperatura crítica",
+      "Falha no sensor",
+      "Sensor recuperado",
+      "Dispositivo reiniciado",
+      "Conexão restabelecida",
+      "Relatórios",
+    ]);
+    await user.click(within(nav).getByRole("link", { name: "Falha no sensor" }));
+    expect(
+      await screen.findByRole("heading", { name: "Falha no sensor", level: 2 }),
+    ).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: "Falha no sensor" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      within(nav).getByRole("link", { name: "Todos os eventos" }),
+    ).not.toHaveAttribute("aria-current");
   });
 
   it("/relatorios mostra a página de relatórios", async () => {

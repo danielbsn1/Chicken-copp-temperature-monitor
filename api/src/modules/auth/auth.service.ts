@@ -66,3 +66,8 @@ export async function registerUser(email: string, password: string) {
   const { created } = await repository.saveUser(parsed.data.email, passwordHash);
   return { created, email: parsed.data.email };
 }
+
+/** Limpeza do job diário: apaga as tentativas de login anteriores a `before`. */
+export function purgeLoginAttempts(before: Date): Promise<number> {
+  return repository.deleteAttemptsBefore(before);
+}
