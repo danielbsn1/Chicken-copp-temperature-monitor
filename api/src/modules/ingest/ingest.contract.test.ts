@@ -1,5 +1,5 @@
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../app.js";
 import { db } from "../../core/db.js";
 import { isDatabaseReady } from "../../test-utils/db-ready.js";
@@ -247,3 +247,83 @@ describe.skipIf(!dbReady)("POST /api/ingest (Postgres real)", () => {
     expect(outro.status).toBe(200);
   });
 });
+
+// De ponta a ponta: lote real no Postgres, Healthchecks simulado (ver HC_PING_URL no vitest.config.ts).
+describe.skipIf(!dbReady)(
+  "aviso ao Healthchecks no POST /api/ingest (Postgres real)",
+  () => {
+    const app = createApp();
+    const HC_ID = "contrato-ingest-hc";
+    let key: string;
+    const fetchMock = vi.fn();
+    const send = () =>
+      request(app)
+        .post("/api/ingest")
+        .set("X-Device-Key", key)
+        .send(validBatch(HC_ID) as object);
+    const pings = () =>
+      fetchMock.mock.calls.filter((c) =>
+        String(c[0]).startsWith("https://hc-ping.test/"),
+      );
+
+    beforeAll(async () => {
+      await db.reading.deleteMany({ where: { deviceId: HC_ID } });
+      await db.event.deleteMany({ where: { deviceId: HC_ID } });
+      await db.device.deleteMany({ where: { id: HC_ID } });
+      key = (await registerDevice(HC_ID, "Contrato do Healthchecks")).key;
+    });
+    beforeEach(() => {
+      fetchMock.mockReset();
+      vi.stubGlobal("fetch", fetchMock);
+    });
+    afterAll(async () => {
+      vi.unstubAllGlobals();
+      await db.reading.deleteMany({ where: { deviceId: HC_ID } });
+      await db.event.deleteMany({ where: { deviceId: HC_ID } });
+      await db.device.deleteMany({ where: { id: HC_ID } });
+    });
+
+    it("lote válido: grava, responde 200 e faz o ping em HC_PING_URL uma vez", async () => {
+      fetchMock.mockResolvedValue(new Response("OK"));
+      const res = await send();
+      expect(res.status).toBe(200);
+      expect(res.body.accepted).toBe(3);
+      expect(pings()).toHaveLength(1);
+      expect(pings()[0]?.[0]).toBe(
+        "https://hc-ping.test/00000000-0000-0000-0000-000000000000",
+      );
+    });
+
+    it("ping que falha (rede): o ingest responde 200 e o lote fica gravado", async () => {
+      fetchMock.mockRejectedValue(new Error("sem rede"));
+      const res = await send();
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ accepted: 0, duplicates: 3, rejected: 0 });
+      expect(await db.reading.count({ where: { deviceId: HC_ID } })).toBe(2);
+    });
+
+    it("Healthchecks respondendo 500: o ingest continua 200", async () => {
+      fetchMock.mockResolvedValue(new Response("erro", { status: 500 }));
+      expect((await send()).status).toBe(200);
+    });
+
+    it("ping lento: a resposta ao ESP32 não espera o ping terminar", async () => {
+      fetchMock.mockImplementation(() => new Promise<Response>(() => undefined)); // nunca responde
+      const startedAt = Date.now();
+      const res = await send();
+      expect(res.status).toBe(200);
+      expect(Date.now() - startedAt).toBeLessThan(2_000);
+    });
+
+    it("lote inválido ou sem chave: nenhum ping", async () => {
+      await request(app)
+        .post("/api/ingest")
+        .send(validBatch(HC_ID) as object);
+      await request(app)
+        .post("/api/ingest")
+        .set("X-Device-Key", key)
+        .send({ deviceId: HC_ID });
+      expect(pings()).toHaveLength(0);
+    });
+  },
+);
