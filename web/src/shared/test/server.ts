@@ -40,6 +40,18 @@ export const handlers = [
       ],
     });
   }),
+  http.get(`${API}/reports/daily`, ({ request }) => {
+    const url = new URL(request.url);
+    return HttpResponse.json({
+      deviceId: url.searchParams.get("deviceId"),
+      day: url.searchParams.get("day"),
+      tempMinC: 22.1,
+      tempMaxC: 33.9,
+      tempAvgC: 27.5,
+      fanOnMinutes: 90,
+      readingsCount: 1380,
+    });
+  }),
   http.post(`${API}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
 ];
 

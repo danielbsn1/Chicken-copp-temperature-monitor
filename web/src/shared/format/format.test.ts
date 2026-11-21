@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime, formatDayMonth, formatTime, toSaoPauloDay } from "./date";
+import {
+  formatDateTime,
+  formatDay,
+  formatDayMonth,
+  formatTime,
+  toSaoPauloDay,
+  yesterdayInSaoPaulo,
+} from "./date";
 import { formatPct, formatTemp } from "./number";
 
 describe("date", () => {
@@ -20,6 +27,19 @@ describe("date", () => {
 describe("formatDayMonth", () => {
   it("mostra dia/mês de São Paulo", () => {
     expect(formatDayMonth("2026-11-14T01:30:00Z")).toBe("13/11");
+  });
+});
+
+describe("dia civil de São Paulo", () => {
+  it("yesterdayInSaoPaulo usa o dia de São Paulo, não o de UTC", () => {
+    // 01:30 UTC do dia 15 ainda é 22:30 do dia 14 em São Paulo; ontem é o dia 13
+    expect(yesterdayInSaoPaulo("2026-11-15T01:30:00Z")).toBe("2026-11-13");
+    expect(yesterdayInSaoPaulo("2026-11-15T10:00:00Z")).toBe("2026-11-14");
+    expect(yesterdayInSaoPaulo("2026-03-01T12:00:00Z")).toBe("2026-02-28");
+  });
+
+  it("formatDay mostra dia/mês/ano sem mudar de dia", () => {
+    expect(formatDay("2026-11-14")).toBe("14/11/2026");
   });
 });
 

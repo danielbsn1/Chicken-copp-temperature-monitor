@@ -31,3 +31,8 @@ export async function markSent(deviceId: string, day: Date, at: Date): Promise<v
     data: { telegramSentAt: at },
   });
 }
+
+/** Resumo já gravado do dia, ou null. */
+export function find(deviceId: string, day: Date) {
+  return db.dailySummary.findUnique({ where: { deviceId_day: { deviceId, day } } });
+}

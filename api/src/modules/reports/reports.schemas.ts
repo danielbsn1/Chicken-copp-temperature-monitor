@@ -13,6 +13,11 @@ const day = z
     { message: "dia inexistente" },
   );
 
-export const dailyQuery = z.object({ deviceId, day });
+/** `json` é o padrão; `csv` baixa o arquivo com cabeçalho e unidades. */
+export const dailyQuery = z.object({
+  deviceId,
+  day,
+  format: z.enum(["json", "csv"]).default("json"),
+});
 
 export type DailyQuery = z.infer<typeof dailyQuery>;
