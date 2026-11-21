@@ -27,7 +27,7 @@ export interface DailySummary {
 export async function calculateDailySummary({
   deviceId,
   day,
-}: DailyQuery): Promise<DailySummary | null> {
+}: Pick<DailyQuery, "deviceId" | "day">): Promise<DailySummary | null> {
   const stats = await dayStats(deviceId, day);
   if (!stats) return null;
   const values = {
@@ -41,11 +41,44 @@ export async function calculateDailySummary({
   return { deviceId, day, ...values };
 }
 
-/** Consulta do resumo: calcula (idempotente) e responde 404 se o dia não tem leituras. */
-export async function dailySummary(query: DailyQuery): Promise<DailySummary> {
-  const summary = await calculateDailySummary(query);
-  if (!summary) throw new NotFoundError("Sem leituras neste dia");
-  return summary;
+/** Consulta do resumo já gravado (o job diário é quem calcula); 404 se o dia não tem resumo. */
+export async function dailySummary({
+  deviceId,
+  day,
+}: Pick<DailyQuery, "deviceId" | "day">): Promise<DailySummary> {
+  const row = await repository.find(deviceId, new Date(`${day}T00:00:00Z`));
+  if (!row) throw new NotFoundError("Sem resumo para este dia");
+  return {
+    deviceId,
+    day,
+    // Os valores ficam em float4 no banco; arredonda de novo para não vazar ruído de ponto flutuante.
+    tempMinC: round2(row.tempMinC),
+    tempMaxC: round2(row.tempMaxC),
+    tempAvgC: round2(row.tempAvgC),
+    fanOnMinutes: row.fanOnMinutes,
+    readingsCount: row.readingsCount,
+  };
+}
+
+/** CSV (RFC 4180, UTF-8 com BOM para o Excel) com cabeçalho e unidades; ponto decimal. */
+export function summaryToCsv(summary: DailySummary): string {
+  const header = [
+    "Dia",
+    "Temperatura mínima (°C)",
+    "Temperatura máxima (°C)",
+    "Temperatura média (°C)",
+    "Ventilador ligado (min)",
+    "Leituras",
+  ];
+  const row = [
+    summary.day,
+    summary.tempMinC,
+    summary.tempMaxC,
+    summary.tempAvgC,
+    summary.fanOnMinutes,
+    summary.readingsCount,
+  ];
+  return `\uFEFF${header.join(",")}\r\n${row.join(",")}\r\n`;
 }
 
 const DAY_MS = 86_400_000;

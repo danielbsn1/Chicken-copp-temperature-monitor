@@ -43,3 +43,17 @@ const dayMonth = new Intl.DateTimeFormat("pt-BR", {
 export function formatDayMonth(value: DateInput): string {
   return dayMonth.format(new Date(value));
 }
+
+/** Ontem (AAAA-MM-DD) no fuso America/Sao_Paulo. */
+export function yesterdayInSaoPaulo(now: DateInput = new Date()): string {
+  const today = toSaoPauloDay(now);
+  return new Date(Date.parse(`${today}T00:00:00Z`) - 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+}
+
+/** "2026-11-14" → "14/11/2026". O dia já é civil: não passa por conversão de fuso. */
+export function formatDay(day: string): string {
+  const [year, month, date] = day.split("-");
+  return `${date}/${month}/${year}`;
+}
