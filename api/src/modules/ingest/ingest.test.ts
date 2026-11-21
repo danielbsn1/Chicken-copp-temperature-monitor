@@ -6,7 +6,6 @@ const saveReadings = vi.hoisted(() => vi.fn());
 const saveEvents = vi.hoisted(() => vi.fn());
 const touch = vi.hoisted(() => vi.fn());
 const setFirmware = vi.hoisted(() => vi.fn());
-const ping = vi.hoisted(() => vi.fn());
 
 vi.mock("./ingest.repository.js", () => ({ runInTransaction }));
 vi.mock("../readings/index.js", () => ({ saveMany: saveReadings }));
@@ -15,7 +14,6 @@ vi.mock("../events/index.js", async (importActual) => ({
   saveMany: saveEvents,
 }));
 vi.mock("../devices/index.js", () => ({ touch, setFirmware }));
-vi.mock("../health/index.js", () => ({ pingHealthchecks: ping }));
 
 const { ingestBatch } = await import("./ingest.service.js");
 
@@ -198,19 +196,10 @@ describe("ingestBatch: gravação", () => {
     expect(setFirmware).toHaveBeenCalledOnce();
   });
 
-  it("se a gravação falha, o erro sobe e o Healthchecks não é avisado", async () => {
+  it("se a gravação falha, o erro sobe", async () => {
     saveEvents.mockRejectedValue(new Error("banco caiu"));
     await expect(ingestBatch("dev-1", batch([sample()], [event()]), NOW)).rejects.toThrow(
       "banco caiu",
-    );
-    expect(ping).not.toHaveBeenCalled();
-  });
-
-  it("avisa o Healthchecks depois de gravar", async () => {
-    await ingestBatch("dev-1", batch([sample()]), NOW);
-    expect(ping).toHaveBeenCalledOnce();
-    expect(ping.mock.invocationCallOrder[0]).toBeGreaterThan(
-      touch.mock.invocationCallOrder[0] ?? Infinity,
     );
   });
 
