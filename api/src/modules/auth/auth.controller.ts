@@ -6,12 +6,17 @@ import type { loginBody } from "./auth.schemas.js";
 import * as service from "./auth.service.js";
 import type { z } from "zod";
 
-const baseCookie = (): CookieOptions => ({
-  httpOnly: true,
-  secure: env.NODE_ENV === "production",
-  sameSite: "lax",
-  path: "/",
-});
+// Em produção o painel e a API ficam em sites diferentes (ex.: *.vercel.app), então o cookie
+// precisa de SameSite=None (exige Secure) para ir nas chamadas do painel; local usa Lax.
+const baseCookie = (): CookieOptions => {
+  const secure = env.NODE_ENV === "production";
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: secure ? "none" : "lax",
+    path: "/",
+  };
+};
 
 export const login: RequestHandler = async (req, res) => {
   const { email, password } = req.body as z.infer<typeof loginBody>;
