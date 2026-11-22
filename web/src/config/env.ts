@@ -3,10 +3,13 @@ import { z } from "zod";
 // Variáveis VITE_* vão para o código do navegador e são públicas: nenhum segredo entra aqui.
 const envSchema = z.object({
   VITE_API_URL: z.url(),
+  // Opcional: o mesmo servidor por um endereço só IPv4, usado para achar equipamentos novos.
+  VITE_PAIRING_URL: z.url().optional(),
 });
 
 export interface Env {
   apiUrl: string;
+  pairingUrl: string | undefined;
 }
 
 export class EnvError extends Error {
@@ -26,6 +29,7 @@ export function parseEnv(raw: Record<string, unknown>): Env {
   }
   return {
     apiUrl: result.data.VITE_API_URL.replace(/\/+$/, ""),
+    pairingUrl: result.data.VITE_PAIRING_URL?.replace(/\/+$/, ""),
   };
 }
 
@@ -50,5 +54,8 @@ export function checkEnv(): string[] | null {
 export const env = {
   get apiUrl() {
     return current().apiUrl;
+  },
+  get pairingUrl() {
+    return current().pairingUrl;
   },
 };
