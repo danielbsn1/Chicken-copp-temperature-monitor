@@ -129,6 +129,50 @@ describe.skipIf(!dbReady)("pareamento (Postgres real)", () => {
     expect((await claim({ manual: true }, OTHER_IP)).status).toBe(201);
   });
 
+  it("a consulta devolve um bilhete e ele vale como prova da rede no vínculo (IPv4 x IPv6)", async () => {
+    await announce({ button: true });
+    const listed = (await available()).body.devices[0];
+    expect(listed.ticket).toMatch(/^\d+\.[A-Za-z0-9_-]{43}$/);
+    // o vínculo chega por outro IP (outra família): sem bilhete não acha, com bilhete vincula
+    expect((await claim({}, OTHER_IP)).status).toBe(404);
+    const res = await claim({ ticket: listed.ticket }, OTHER_IP);
+    expect(res.status).toBe(201);
+  });
+
+  it("bilhete de outro serial, vencido ou adulterado não vale", async () => {
+    await announce({ button: true });
+    await announce({ button: true, serial: SERIAL_2 });
+    const tickets = (await available()).body.devices as {
+      serial: string;
+      ticket: string;
+    }[];
+    const other = tickets.find((d) => d.serial === SERIAL_2)!.ticket;
+    expect((await claim({ ticket: other }, OTHER_IP)).status).toBe(404);
+
+    const mine = tickets.find((d) => d.serial === SERIAL)!.ticket;
+    const [, sig] = mine.split(".");
+    expect(
+      (await claim({ ticket: `${Date.now() - 1000}.${sig}` }, OTHER_IP)).status,
+    ).toBe(404);
+    expect((await claim({ ticket: `${mine}x` }, OTHER_IP)).status).toBe(404);
+  });
+
+  it("o bilhete também vale no cadastro de conta nova", async () => {
+    await announce({ button: true });
+    const ticket = (await available()).body.devices[0].ticket;
+    const res = await request(app)
+      .post("/api/pairing/signup")
+      .set("X-Forwarded-For", OTHER_IP)
+      .send({
+        serial: SERIAL,
+        name: "Galinheiro da Ana",
+        email: NEW_EMAIL,
+        password: PASSWORD,
+        ticket,
+      });
+    expect(res.status).toBe(201);
+  });
+
   it("sem o botão apertado o vínculo responde 409 PAIRING_CLOSED", async () => {
     await announce({});
     const res = await claim({});

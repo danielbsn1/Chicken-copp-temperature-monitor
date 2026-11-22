@@ -36,7 +36,8 @@ export function PairForm({ signup = false, pending, error, onSubmit }: PairFormP
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    const base = { serial, name: name.trim(), manual };
+    const ticket = manual ? undefined : found.find((d) => d.serial === serial)?.ticket;
+    const base = { serial, name: name.trim(), manual, ...(ticket ? { ticket } : {}) };
     onSubmit(signup ? { ...base, email, password } : base);
   }
 
