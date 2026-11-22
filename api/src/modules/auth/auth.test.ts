@@ -45,7 +45,7 @@ vi.mock("./password.js", async (original) => {
 });
 
 const password = await import("./password.js");
-const { login, getUser, registerUser } = await import("./auth.service.js");
+const { login, getUser, registerUser, MOCK_USER } = await import("./auth.service.js");
 const { authRouter } = await import("./index.js");
 
 const NOW = new Date("2026-11-18T12:00:00Z");
@@ -137,6 +137,14 @@ describe("login", () => {
   it("as falhas de um e-mail não bloqueiam outro", async () => {
     for (let i = 0; i < 5; i++) await login("outro@x.com", "x", NOW).catch(() => {});
     expect(await login(EMAIL, SENHA, NOW)).toMatchObject({ id: "u-1" });
+  });
+});
+
+describe("login mocado", () => {
+  it("o usuário de teste entra e é criado no banco", async () => {
+    const user = await login(MOCK_USER.email, MOCK_USER.password, NOW);
+    expect(user.email).toBe(MOCK_USER.email);
+    expect(users.some((u) => u.email === MOCK_USER.email)).toBe(true);
   });
 });
 
