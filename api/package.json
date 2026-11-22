@@ -17,7 +17,7 @@
     "depcruise": "depcruise src --config .dependency-cruiser.cjs",
     "test": "vitest run",
     "prebuild": "pnpm depcruise",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "prisma generate && tsc -p tsconfig.build.json",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
