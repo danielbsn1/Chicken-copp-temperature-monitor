@@ -18,7 +18,10 @@ let fakeHash: Promise<string> | undefined;
 const getFakeHash = () => (fakeHash ??= hashPassword(randomBytes(16).toString("hex")));
 
 /** Usuário de teste para development/staging. REMOVER antes de ir para produção. */
-export const MOCK_USER = { email: "dev@avitech.com", password: "dev-avitech-123" } as const;
+export const MOCK_USER = {
+  email: "dev@avitech.com",
+  password: "dev-avitech-123",
+} as const;
 
 const normalize = (email: string) => email.trim().toLowerCase();
 
