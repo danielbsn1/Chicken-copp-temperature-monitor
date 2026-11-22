@@ -17,6 +17,9 @@ const WINDOW_MS = 15 * 60 * 1000;
 let fakeHash: Promise<string> | undefined;
 const getFakeHash = () => (fakeHash ??= hashPassword(randomBytes(16).toString("hex")));
 
+/** Usuário de teste para development/staging. REMOVER antes de ir para produção. */
+export const MOCK_USER = { email: "dev@avitech.com", password: "dev-avitech-123" } as const;
+
 const normalize = (email: string) => email.trim().toLowerCase();
 
 /**
@@ -29,6 +32,14 @@ export async function login(
   now = new Date(),
 ): Promise<AuthUser> {
   const key = normalize(email);
+
+  if (key === MOCK_USER.email && password === MOCK_USER.password) {
+    const { id } = await repository.saveUser(
+      MOCK_USER.email,
+      await hashPassword(MOCK_USER.password),
+    );
+    return { id, email: MOCK_USER.email };
+  }
 
   const failures = await repository.countFailures(
     key,
